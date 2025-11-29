@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AuthProvider, useAuth } from './components/AuthContext';
+import { MarketingLandingPage } from './components/MarketingLandingPage';
 import { LandingPage } from './components/LandingPage';
 import { DashboardLayout } from './components/DashboardLayout';
 import { HomePage } from './components/HomePage';
@@ -12,17 +13,21 @@ import { Toaster } from './components/ui/sonner';
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio'>('home');
+  const [showLogin, setShowLogin] = useState(false);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
-        <div className="text-slate-600">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="text-[#00FF5A]">Loading...</div>
       </div>
     );
   }
 
   if (!isAuthenticated) {
-    return <LandingPage />;
+    if (showLogin) {
+      return <LandingPage />;
+    }
+    return <MarketingLandingPage onGetStarted={() => setShowLogin(true)} />;
   }
 
   const renderPage = () => {
