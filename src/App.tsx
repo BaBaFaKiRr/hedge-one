@@ -25,7 +25,7 @@ function AppContent() {
 
   if (!isAuthenticated) {
     if (showLogin) {
-      return <LandingPage />;
+      return <LandingPage onBackToMarketing={() => setShowLogin(false)} />;
     }
     return <MarketingLandingPage onGetStarted={() => setShowLogin(true)} />;
   }

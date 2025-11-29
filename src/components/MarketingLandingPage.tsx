@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { 
   Zap, 
   Code, 
-  TrendingUp, 
+  TrendingUp,
   BarChart3, 
   Shield, 
   Clock, 
@@ -15,6 +15,8 @@ import {
   Mail,
   Send
 } from 'lucide-react';
+// @ts-ignore - Vite handles image imports
+import appLogo from './app_logo.png';
 
 interface MarketingLandingPageProps {
   onGetStarted: () => void;
@@ -47,18 +49,16 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         borderBottom: `1px solid ${neonGreen}33`
       }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div style={{ 
-              width: '2rem', 
-              height: '2rem', 
-              background: `linear-gradient(to bottom right, ${neonGreen}, ${darkGreen})`,
-              borderRadius: '0.5rem',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}>
-              <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: '#000000' }} />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <img 
+              src={appLogo} 
+              alt="HedgeOne Logo" 
+              style={{ 
+                height: '2.5rem', 
+                width: 'auto',
+                filter: `drop-shadow(0 0 10px ${neonGreen}40)`
+              }}
+            />
             <span style={{ 
               fontSize: '1.25rem', 
               fontWeight: 'bold',
@@ -424,108 +424,6 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         </div>
       </section>
 
-      {/* Tech Stack Section */}
-      <section style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, ${darkBg}, #000000)` }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Our <span style={{ color: neonGreen }}>Tech Stack</span>
-            </h2>
-            <p style={{ fontSize: '1.125rem', color: grey, maxWidth: '42rem', margin: '0 auto' }}>
-              Built with industry-leading technologies
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '1.5rem' }}>
-            {['Python', 'Node.js', 'C++', 'Trading APIs', 'MT5', 'React'].map((tech, i) => (
-              <div
-                key={tech}
-                style={{
-                  padding: '1.5rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  border: `1px solid ${grey}33`,
-                  borderRadius: '0.75rem',
-                  backdropFilter: 'blur(4px)',
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease'
-                }}
-                className="hover:border-[#00FF5A] hover:shadow-[0_0_20px_rgba(0,255,90,0.3)]"
-              >
-                <div style={{ 
-                  fontSize: '1.5rem', 
-                  fontWeight: 'bold', 
-                  color: grey,
-                  marginBottom: '0.5rem',
-                  transition: 'color 0.3s ease'
-                }}
-                className="group-hover:text-[#00FF5A]"
-                >
-                  {tech}
-                </div>
-                <div style={{ width: '100%', height: '4px', backgroundColor: `${grey}33`, borderRadius: '9999px', overflow: 'hidden' }}>
-                  <div style={{ 
-                    height: '100%', 
-                    background: `linear-gradient(to right, ${neonGreen}, ${darkGreen})`,
-                    width: '0%',
-                    transition: 'width 0.5s ease'
-                  }}
-                  className="group-hover:w-full"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section style={{ padding: '6rem 1.5rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              What Our <span style={{ color: neonGreen }}>Clients Say</span>
-            </h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
-            {[
-              {
-                quote: 'HedgeOne transformed our trading operations. Their custom algo system increased our efficiency by 300%.',
-                author: 'John Smith',
-                role: 'Portfolio Manager',
-              },
-              {
-                quote: 'The strategy curation service is exceptional. Every strategy we\'ve implemented has exceeded expectations.',
-                author: 'Sarah Johnson',
-                role: 'Trading Director',
-              },
-              {
-                quote: 'Best investment we\'ve made. The 24/7 monitoring and support is unmatched in the industry.',
-                author: 'Michael Chen',
-                role: 'Hedge Fund CIO',
-              },
-            ].map((testimonial, i) => (
-              <div
-                key={i}
-                style={{
-                  padding: '1.5rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  border: `1px solid ${neonGreen}33`,
-                  borderRadius: '0.75rem',
-                  backdropFilter: 'blur(4px)',
-                  transition: 'all 0.3s ease'
-                }}
-                className="hover:border-[#00FF5A]"
-              >
-                <div style={{ color: grey, marginBottom: '1rem', fontStyle: 'italic' }}>"{testimonial.quote}"</div>
-                <div style={{ borderTop: `1px solid ${neonGreen}33`, paddingTop: '1rem' }}>
-                  <div style={{ fontWeight: 'bold', color: neonGreen }}>{testimonial.author}</div>
-                  <div style={{ fontSize: '0.875rem', color: grey }}>{testimonial.role}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Contact / CTA Section */}
       <section style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
         <div style={{ maxWidth: '896px', margin: '0 auto' }}>
@@ -675,18 +573,16 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       <footer style={{ padding: '3rem 1.5rem', borderTop: `1px solid ${neonGreen}33` }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <div style={{ 
-                width: '2rem', 
-                height: '2rem', 
-                background: `linear-gradient(to bottom right, ${neonGreen}, ${darkGreen})`,
-                borderRadius: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <TrendingUp style={{ width: '1.25rem', height: '1.25rem', color: '#000000' }} />
-              </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <img 
+                src={appLogo} 
+                alt="HedgeOne Logo" 
+                style={{ 
+                  height: '2.5rem', 
+                  width: 'auto',
+                  filter: `drop-shadow(0 0 10px ${neonGreen}40)`
+                }}
+              />
               <span style={{ 
                 fontSize: '1.25rem', 
                 fontWeight: 'bold',

@@ -11,6 +11,8 @@ import {
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
 import { LayoutDashboard, Key, LogOut, Menu, X, MessageSquare, Zap, Briefcase } from 'lucide-react';
+// @ts-ignore - Vite handles image imports
+import appLogo from './app_logo.png';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -43,7 +45,15 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
             >
               {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-            <h2 className="text-slate-900">HedgeOne Strategy Manager</h2>
+            <div className="flex items-center gap-2">
+              <img 
+                src={appLogo} 
+                alt="HedgeOne Logo" 
+                style={{ height: '2rem', width: 'auto' }}
+                className="object-contain"
+              />
+              <h2 className="text-slate-900">HedgeOne Strategy Manager</h2>
+            </div>
           </div>
 
           <DropdownMenu>
