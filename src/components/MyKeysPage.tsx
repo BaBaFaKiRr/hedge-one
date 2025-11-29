@@ -387,7 +387,6 @@ export function MyKeysPage() {
                   </label>
                   <Input
                     id="broker-api-key"
-                    type="password"
                     value={form?.api_key ?? ''}
                     onChange={(e) => updateForm('api_key', e.target.value)}
                     placeholder="Enter API Key"
