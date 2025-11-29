@@ -3,6 +3,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
@@ -275,12 +282,6 @@ export function MyKeysPage() {
                     <div className="font-semibold text-slate-900">{broker.name}</div>
                     <div className="text-sm text-slate-600 mt-1">
                       <span className="font-medium">Platform:</span> {broker.platform}
-                      {broker.api_key && (
-                        <span className="ml-4">
-                          <span className="font-medium">API Key:</span>{' '}
-                          <span className="font-mono text-xs">{broker.api_key.slice(0, 8)}...</span>
-                        </span>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
@@ -366,13 +367,18 @@ export function MyKeysPage() {
                   <label htmlFor="broker-platform" className="text-sm font-medium text-slate-700 mb-1.5">
                     Platform <span className="text-red-500">*</span>
                   </label>
-                  <Input
-                    id="broker-platform"
-                    value={form?.platform ?? ''}
-                    onChange={(e) => updateForm('platform', e.target.value)}
-                    placeholder="e.g. Zerodha"
-                    className="w-full"
-                  />
+                  <Select
+                    value={form?.platform || ''}
+                    onValueChange={(value) => updateForm('platform', value)}
+                  >
+                    <SelectTrigger id="broker-platform" className="w-full">
+                      <SelectValue placeholder="Select a platform" />
+                    </SelectTrigger>
+                    <SelectContent className="z-[10001]" style={{ zIndex: 11000 }}>
+                      <SelectItem value="Angelone">Angelone</SelectItem>
+                      <SelectItem value="Zerodha">Zerodha</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="flex flex-col md:col-span-2">
@@ -381,6 +387,7 @@ export function MyKeysPage() {
                   </label>
                   <Input
                     id="broker-api-key"
+                    type="password"
                     value={form?.api_key ?? ''}
                     onChange={(e) => updateForm('api_key', e.target.value)}
                     placeholder="Enter API Key"
@@ -422,6 +429,7 @@ export function MyKeysPage() {
                   </label>
                   <Input
                     id="broker-client-id"
+                    type="password"
                     value={form?.client_id ?? ''}
                     onChange={(e) => updateForm('client_id', e.target.value || null)}
                     placeholder="Enter Client ID"

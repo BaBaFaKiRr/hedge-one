@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Briefcase, Edit3, Trash2, X } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, X, RefreshCw } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
@@ -283,6 +283,17 @@ export function PortfolioPage() {
                       {strategy.strategy_name || 'Unknown'}
                     </div>
                     <div className="flex items-center gap-2">
+                      <button
+                          onClick={async () => await fetchData()}
+                          disabled={isFetching}
+                          className="ml-1 p-1 hover:bg-slate-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Refresh status"
+                          aria-label="Refresh status"
+                        >
+                          <RefreshCw 
+                          className={`h-3 w-3 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} 
+                        />
+                      </button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -334,15 +345,38 @@ export function PortfolioPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-slate-600">Status:</span>
-                      {strategy.active ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                          Active
-                        </span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                          Inactive
-                        </span>
-                      )}
+                      {(() => {
+                        const status = strategy.last_task_status?.toUpperCase();
+                        if (status === 'RUNNING') {
+                          return (
+                            <span className="inline-flex items-center text-sm text-slate-900 font-medium">
+                              <span className="status-light running"></span>
+                              Running
+                            </span>
+                          );
+                        } else if (status === 'PENDING') {
+                          return (
+                            <span className="inline-flex items-center text-sm text-slate-900 font-medium">
+                              <span className="status-light pending"></span>
+                              Pending
+                            </span>
+                          );
+                        } else if (status === 'STOPPED') {
+                          return (
+                            <span className="inline-flex items-center text-sm text-slate-900 font-medium">
+                              <span className="status-light stopped"></span>
+                              Stopped
+                            </span>
+                          );
+                        } else {
+                          return (
+                            <span className="inline-flex items-center text-sm text-slate-400 font-medium">
+                              <span className="status-light stopped"></span>
+                              {status || 'Unknown'}
+                            </span>
+                          );
+                        }
+                      })()}
                     </div>
                   </div>
                 </div>
