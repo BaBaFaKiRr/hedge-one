@@ -410,7 +410,7 @@ export function StrategiesPage({ onNavigate }: StrategiesPageProps) {
                 </label>
                 <Switch
                   id="deploy-dry-run"
-                  checked={form?.dry_run ?? true}
+                  checked={form?.dry_run ?? false}
                   onCheckedChange={(checked) => updateForm('dry_run', checked)}
                   style={{ zIndex: 11000 }}
                 />

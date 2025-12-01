@@ -274,41 +274,6 @@ export function HomePage() {
           )}
         </CardContent>
       </Card>
-
-      <Card>
-        <CardHeader className="flex items-center justify-between">
-          <div>
-            <CardTitle>Python Logs</CardTitle>
-            <CardDescription>Live output captured from your automation scripts</CardDescription>
-          </div>
-          <Button onClick={fetchLogs} disabled={isLoadingLogs} variant="secondary">
-            {isLoadingLogs ? 'Refreshing...' : 'Refresh'}
-          </Button>
-        </CardHeader>
-        <CardContent>
-          {isLoadingLogs ? (
-            <div className="text-slate-600">Loading logs...</div>
-          ) : logs.length === 0 ? (
-            <div className="text-slate-500 text-sm">No logs available yet.</div>
-          ) : (
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-              {logs.map((log) => (
-                <div
-                  key={log.id}
-                  className="border border-slate-200 rounded-md p-3 bg-white shadow-sm"
-                >
-                  <div className="text-xs text-slate-500 mb-1">
-                    {new Date(log.created_at).toLocaleString()}
-                  </div>
-                  <pre className="whitespace-pre-wrap break-words text-sm text-slate-800">
-                    {log.content ?? ''}
-                  </pre>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }
