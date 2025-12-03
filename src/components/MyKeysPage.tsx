@@ -51,6 +51,12 @@ export function MyKeysPage() {
   const [form, setForm] = useState<BrokerForm | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  // Daily Login dialog state
+  const [dailyLoginDialogOpen, setDailyLoginDialogOpen] = useState(false);
+  const [dailyLoginBroker, setDailyLoginBroker] = useState<BrokerRow | null>(null);
+  const [requestToken, setRequestToken] = useState('');
+  const [isSavingToken, setIsSavingToken] = useState(false);
 
   const supabase = useMemo(() => {
     return createClient(
@@ -185,6 +191,48 @@ export function MyKeysPage() {
     }
   };
 
+  const openDailyLoginDialog = (broker: BrokerRow) => {
+    setDailyLoginBroker(broker);
+    setRequestToken('');
+    setDailyLoginDialogOpen(true);
+    
+    // Open Zerodha login URL in new tab
+    const loginUrl = `https://kite.zerodha.com/connect/login?api_key=${broker.api_key}`;
+    window.open(loginUrl, '_blank');
+  };
+
+  const saveRequestToken = async () => {
+    if (!dailyLoginBroker || !user?.id || !requestToken.trim()) {
+      toast.error('Please enter a request token');
+      return;
+    }
+
+    setIsSavingToken(true);
+    try {
+      const { error } = await supabase
+        .from('user_brokers')
+        .update({
+          auth_token: requestToken.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', dailyLoginBroker.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+      
+      toast.success('Request token saved successfully');
+      setDailyLoginDialogOpen(false);
+      setDailyLoginBroker(null);
+      setRequestToken('');
+      await fetchBrokers();
+    } catch (err: any) {
+      console.error('Save token failed:', err);
+      toast.error(err?.message || 'Failed to save request token');
+    } finally {
+      setIsSavingToken(false);
+    }
+  };
+
   const deleteBroker = async (broker: BrokerRow) => {
     if (!user?.id) return;
     const confirmed = window.confirm(
@@ -285,6 +333,15 @@ export function MyKeysPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
+                    {broker.platform === 'Zerodha' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openDailyLoginDialog(broker)}
+                      >
+                        Daily Login
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -498,6 +555,76 @@ export function MyKeysPage() {
                 disabled={isSaving}
               >
                 {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/** Daily Login Dialog */}
+      <Dialog.Root open={dailyLoginDialogOpen} onOpenChange={(o) => {
+        setDailyLoginDialogOpen(o);
+        if (!o) {
+          setDailyLoginBroker(null);
+          setRequestToken('');
+        }
+      }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="DialogOverlay" />
+          <Dialog.Content className="DialogContent">
+            <div className="flex items-center justify-between mb-4">
+              <Dialog.Title className="DialogTitle text-xl font-semibold text-slate-900">
+                Daily Login - Zerodha
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  className="IconButton rounded-full p-1 hover:bg-slate-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5 text-slate-500" />
+                </button>
+              </Dialog.Close>
+            </div>
+            <Dialog.Description className="DialogDescription text-sm text-slate-600 mb-6">
+              Zerodha requires users to log in to their account daily and retrieve request_token from the destination URL. Please enter the request_token here:
+            </Dialog.Description>
+
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <label htmlFor="request-token" className="text-sm font-medium text-slate-700 mb-1.5">
+                  Request Token <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="request-token"
+                  value={requestToken}
+                  onChange={(e) => setRequestToken(e.target.value)}
+                  placeholder="Enter request token from Zerodha"
+                  className="w-full"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && requestToken.trim()) {
+                      saveRequestToken();
+                    }
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+              <Dialog.Close asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDailyLoginDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Dialog.Close>
+              <Button
+                onClick={saveRequestToken}
+                disabled={isSavingToken || !requestToken.trim()}
+              >
+                {isSavingToken ? 'Saving...' : 'Save'}
               </Button>
             </div>
           </Dialog.Content>

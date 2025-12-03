@@ -79,6 +79,7 @@ export function PortfolioPage() {
   const [form, setForm] = useState<EditForm | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isRestartingStrategy, setIsRestartingStrategy] = useState<string | null>(null);
 
   const supabase = useMemo(() => {
     return createClient(
@@ -213,6 +214,63 @@ export function PortfolioPage() {
     }
   };
 
+  const restartStrategy = async (strategy: UserStrategyDisplay) => {
+    if (!user?.id) return;
+    setIsRestartingStrategy(strategy.id);
+    try {
+      // Fetch task_arn from user_strategies table
+      const { data, error } = await supabase
+        .from('user_strategies')
+        .select('task_arn')
+        .eq('id', strategy.id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error) throw error;
+
+      const taskArn = data?.task_arn;
+      if (!taskArn) {
+        throw new Error('Task ARN not found for this strategy');
+      }
+
+      // Send POST request with task_arn
+      const requestBody = { taskArn: taskArn };
+      console.log('Sending restart request:', requestBody);
+      
+      const response = await fetch("https://rhc3n54flhhz2j5x7bydcaobhy0lkqck.lambda-url.ap-southeast-2.on.aws/", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Response received:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unable to read error response');
+        throw new Error(`Restart failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json().catch(() => ({}));
+      console.log('Restart successful:', result);
+      toast.success(`Strategy "${strategy.strategy_name}" restart initiated`);
+    } catch (error: any) {
+      console.error('Restart failed - Full error:', error);
+      console.error('Error name:', error?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+      
+      if (error?.name === 'TypeError' && error?.message?.includes('fetch')) {
+        toast.error('Network error: Unable to connect to the server. Please check your connection.');
+      } else {
+        toast.error(error?.message || `Failed to restart strategy "${strategy.strategy_name}"`);
+      }
+    } finally {
+      setIsRestartingStrategy(null);
+    }
+  };
+
   const deleteStrategy = async (strategy: UserStrategyDisplay) => {
     if (!user?.id) return;
     const confirmed = window.confirm(
@@ -283,17 +341,15 @@ export function PortfolioPage() {
                       {strategy.strategy_name || 'Unknown'}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button
-                          onClick={async () => await fetchData()}
-                          disabled={isFetching}
-                          className="ml-1 p-1 hover:bg-slate-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title="Refresh status"
-                          aria-label="Refresh status"
-                        >
-                          <RefreshCw 
-                          className={`h-3 w-3 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} 
-                        />
-                      </button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => restartStrategy(strategy)}
+                        disabled={isRestartingStrategy === strategy.id}
+                      >
+                        <RefreshCw className={`mr-2 h-4 w-4 ${isRestartingStrategy === strategy.id ? 'animate-spin' : ''}`} />
+                        {isRestartingStrategy === strategy.id ? 'Restarting...' : 'Restart'}
+                      </Button>
                       <Button
                         size="sm"
                         variant="outline"
@@ -377,6 +433,17 @@ export function PortfolioPage() {
                           );
                         }
                       })()}
+                      <button
+                          onClick={async () => await fetchData()}
+                          disabled={isFetching}
+                          className="ml-1 p-1 hover:bg-slate-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Refresh status"
+                          aria-label="Refresh status"
+                        >
+                          <RefreshCw 
+                          className={`h-3 w-3 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} 
+                        />
+                      </button>
                     </div>
                   </div>
                 </div>
