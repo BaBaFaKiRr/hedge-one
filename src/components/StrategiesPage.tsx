@@ -147,7 +147,7 @@ export function StrategiesPage({ onNavigate }: StrategiesPageProps) {
       broker_id: null,
       telegram_chat_id: null,
       qty: strategy.default_qty ?? 1,
-      dry_run: true,
+      dry_run: false,
     });
     setDialogOpen(true);
   };
