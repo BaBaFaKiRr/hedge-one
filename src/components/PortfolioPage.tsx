@@ -289,6 +289,37 @@ export function PortfolioPage() {
     }
   };
 
+  const stopTask = async (taskArn: string, strategyName: string) => {
+    try {
+      const requestBody = { taskArn: taskArn };
+      console.log('Sending stop request:', requestBody);
+      
+      const response = await fetch("https://rhc3n54flhhz2j5x7bydcaobhy0lkqck.lambda-url.ap-southeast-2.on.aws/", {
+        method: "POST",
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Stop response received:', response.status, response.statusText);
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unable to read error response');
+        throw new Error(`Stop failed: ${response.status} ${response.statusText} - ${errorText}`);
+      }
+
+      const result = await response.json().catch(() => ({}));
+      console.log('Stop successful:', result);
+    } catch (error: any) {
+      console.error('Stop failed - Full error:', error);
+      // Don't throw here - we'll log but continue since supabase entry is already deleted
+      console.error('Error name:', error?.name);
+      console.error('Error message:', error?.message);
+      console.error('Error stack:', error?.stack);
+    }
+  };
+
   const deleteStrategy = async (strategy: UserStrategyDisplay) => {
     if (!user?.id) return;
     const confirmed = window.confirm(
@@ -298,12 +329,32 @@ export function PortfolioPage() {
 
     setIsDeleting(strategy.id);
     try {
-      const { error } = await supabase
+      // First, fetch task_arn before deleting the entry
+      const { data, error: fetchError } = await supabase
+        .from('user_strategies')
+        .select('task_arn')
+        .eq('id', strategy.id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const taskArn = data?.task_arn;
+
+      // Delete the entry from supabase
+      const { error: deleteError } = await supabase
         .from('user_strategies')
         .delete()
         .eq('id', strategy.id)
         .eq('user_id', user.id);
-      if (error) throw error;
+      
+      if (deleteError) throw deleteError;
+
+      // Stop the task if task_arn exists
+      if (taskArn) {
+        await stopTask(taskArn, strategy.strategy_name || 'Unknown');
+      }
+
       toast.success('Strategy deleted successfully');
       await fetchData();
     } catch (err: any) {
