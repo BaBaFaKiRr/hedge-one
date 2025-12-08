@@ -324,7 +324,7 @@ export function MyKeysPage() {
               {brokers.map((broker) => (
                 <div
                   key={broker.id}
-                  className="flex items-center justify-between border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors"
+                  className="flex items-center justify-between border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors" 
                 >
                   <div className="flex-1">
                     <div className="font-semibold text-slate-900">{broker.name}</div>
@@ -369,7 +369,10 @@ export function MyKeysPage() {
       <Card className="border-amber-200 bg-amber-50">
         <CardContent className="pt-6">
           <p className="text-amber-900">
-            Get Auth token from https://kite.zerodha.com/connect/login?api_key="API_KEY"
+            Zerodha requires users to login to their accounts daily. If you are using Zerodha as your broker,<br /> 
+            you can press "Daily Login" button and be redirected to: https://kite.zerodha.com/connect/login?api_key="API_KEY".<br />
+            You will be redirected to the Zerodha login page. Once you login, you will be redirected to the callback URL with a request_token parameter.<br />
+            Copy the request_token from the callback URL and paste it in the "Auth Token" field on this page and click "Save".
           </p>
         </CardContent>
       </Card>

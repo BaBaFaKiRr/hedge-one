@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Button } from './ui/button';
 import { 
   Zap, 
@@ -15,6 +15,9 @@ import {
   Mail,
   Send
 } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { toast } from 'sonner';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
@@ -24,12 +27,104 @@ interface MarketingLandingPageProps {
 
 export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps) {
   const [scrollY, setScrollY] = useState(0);
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const supabase = useMemo(() => {
+    return createClient(
+      `https://${projectId}.supabase.co`,
+      publicAnonKey
+    );
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const sendTelegramAlert = async (name: string, email: string, phone: string, message: string) => {
+    const botToken = '8560239509:AAEYpJirHIh0bPS3CTAML0II6C4z4D512AA';
+    const chatId = '7928874166';
+    
+    const telegramMessage = `🔔 New Inquiry Received\n\n` +
+      `👤 Name: ${name}\n` +
+      `📧 Email: ${email}\n` +
+      `📱 Phone: ${phone || 'Not provided'}\n` +
+      `💬 Message: ${message}\n\n` +
+      `⏰ Time: ${new Date().toLocaleString()}`;
+
+    try {
+      const response = await fetch(
+        `https://api.telegram.org/bot${botToken}/sendMessage`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: telegramMessage,
+            parse_mode: 'HTML',
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Telegram API error:', errorData);
+        // Don't throw - we still want to save to Supabase even if Telegram fails
+      }
+    } catch (error) {
+      console.error('Failed to send Telegram alert:', error);
+      // Don't throw - we still want to save to Supabase even if Telegram fails
+    }
+  };
+
+  const scrollToContact = () => {
+    const contactSection = document.getElementById('contact-section');
+    if (contactSection) {
+      contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Convert phone to number if provided, otherwise null
+      const phoneNumber = formData.phone.trim() ? parseInt(formData.phone.replace(/\D/g, ''), 10) : null;
+
+      // Save to Supabase
+      const { error: supabaseError } = await supabase
+        .from('inquiry')
+        .insert([
+          {
+            name: formData.name,
+            email: formData.email,
+            phone: phoneNumber,
+            message: formData.message,
+          },
+        ]);
+
+      if (supabaseError) {
+        throw supabaseError;
+      }
+
+      // Send Telegram alert
+      await sendTelegramAlert(formData.name, formData.email, formData.phone, formData.message);
+
+      // Success
+      toast.success('Thank you for your message! We will get back to you soon.');
+      setFormData({ name: '', email: '', phone: '', message: '' });
+    } catch (error: any) {
+      console.error('Failed to submit inquiry:', error);
+      toast.error(error?.message || 'Failed to send message. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const neonGreen = '#00FF5A';
   const darkGreen = '#00CC47';
@@ -153,7 +248,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', alignItems: 'center', paddingTop: '1rem' }}>
               <Button
-                onClick={onGetStarted}
+                onClick={scrollToContact}
                 size="lg"
                 style={{ 
                   backgroundColor: neonGreen, 
@@ -425,7 +520,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       </section>
 
       {/* Contact / CTA Section */}
-      <section style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
+      <section id="contact-section" style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
         <div style={{ maxWidth: '896px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
@@ -498,15 +593,15 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#ffffff' }}>Send a Message</h3>
               <form 
                 style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  alert('Thank you for your message! We will get back to you soon.');
-                }}
+                onSubmit={handleSubmit}
               >
                 <input
                   type="text"
-                  placeholder="Your Name"
+                  placeholder="Name"
                   required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
@@ -516,12 +611,15 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                     color: '#ffffff',
                     fontSize: '1rem'
                   }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all"
+                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <input
                   type="email"
-                  placeholder="Your Email"
+                  placeholder="Email"
                   required
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
@@ -531,12 +629,32 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                     color: '#ffffff',
                     fontSize: '1rem'
                   }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all"
+                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                  disabled={isSubmitting}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                    border: `1px solid ${neonGreen}33`,
+                    borderRadius: '0.5rem',
+                    color: '#ffffff',
+                    fontSize: '1rem'
+                  }}
+                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <textarea
-                  placeholder="Your Message"
+                  placeholder="Message"
                   rows={4}
                   required
+                  value={formData.message}
+                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  disabled={isSubmitting}
                   style={{
                     width: '100%',
                     padding: '0.75rem 1rem',
@@ -548,20 +666,21 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                     resize: 'none',
                     fontFamily: 'inherit'
                   }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all"
+                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 />
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   style={{ 
                     width: '100%',
                     backgroundColor: neonGreen, 
                     color: '#000000',
                     border: 'none'
                   }}
-                  className="hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,255,90,0.5)]"
+                  className="hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,255,90,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send Message
-                  <Send style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
+                  {isSubmitting ? 'Sending...' : 'Send Message'}
+                  {!isSubmitting && <Send style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />}
                 </Button>
               </form>
             </div>

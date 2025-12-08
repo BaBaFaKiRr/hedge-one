@@ -29,6 +29,7 @@ interface StrategyRow {
   default_qty: number | null;
   active: boolean | null;
   created_at?: string;
+  segment: Nullable<{ segment: string }>;
 }
 
 interface BrokerRow {
@@ -278,10 +279,15 @@ export function StrategiesPage({ onNavigate }: StrategiesPageProps) {
                       )}
                       {strategy.default_qty !== null && strategy.default_qty !== undefined && (
                         <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                          Qty: {strategy.default_qty}
+                          Min Qty: {strategy.default_qty}
                         </span>
                       )}
                     </div>
+                    {strategy.segment?.segment && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
+                          Segment: {strategy.segment.segment}
+                        </span>
+                    )}
                   </CardHeader>
                   <CardContent className="flex flex-col flex-1 pt-0 pb-4">
                     <CardDescription className="flex-1 text-sm text-slate-600 line-clamp-3 mb-4 min-h-[60px]">
