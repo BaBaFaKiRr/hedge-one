@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { TrendingUp, Activity, BarChart3, DollarSign } from 'lucide-react';
+import { TrendingUp, Activity, BarChart3, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -30,6 +30,8 @@ export function HomePage() {
   const [isLoadingTrades, setIsLoadingTrades] = useState(false);
   const [logs, setLogs] = useState<PythonLog[]>([]);
   const [isLoadingLogs, setIsLoadingLogs] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const tradesPerPage = 10;
 
   const supabase = useMemo(() => {
     return createClient(
@@ -88,6 +90,17 @@ export function HomePage() {
     fetchTrades();
     fetchLogs();
   }, [fetchTrades, fetchLogs]);
+
+  // Pagination calculations for trades
+  const totalPages = Math.ceil(trades.length / tradesPerPage);
+  const startIndex = (currentPage - 1) * tradesPerPage;
+  const endIndex = startIndex + tradesPerPage;
+  const paginatedTrades = trades.slice(startIndex, endIndex);
+
+  // Reset to page 1 when trades change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [trades.length]);
 
   // Calculate Performance and Win Rate from trades
   const { performance, winRate } = useMemo(() => {
@@ -253,7 +266,7 @@ export function HomePage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {trades.map((trade) => (
+                {paginatedTrades.map((trade) => (
                   <TableRow key={trade.id}>
                     <TableCell>{trade.stock_option ?? '—'}</TableCell>
                     <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
@@ -271,6 +284,36 @@ export function HomePage() {
                 ))}
               </TableBody>
             </Table>
+          )}
+          {trades.length > 0 && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
+              <div className="text-sm text-slate-600">
+                Showing {startIndex + 1} to {Math.min(endIndex, trades.length)} of {trades.length} trades
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Previous
+                </Button>
+                <div className="text-sm text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>

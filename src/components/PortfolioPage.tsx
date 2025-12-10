@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
@@ -98,6 +98,8 @@ export function PortfolioPage() {
   const [expandedLogsId, setExpandedLogsId] = useState<string | null>(null);
   const [logs, setLogs] = useState<Record<string, LogEvent[]>>({});
   const [isLoadingLogs, setIsLoadingLogs] = useState<Record<string, boolean>>({});
+  const [logsCurrentPage, setLogsCurrentPage] = useState<Record<string, number>>({});
+  const logsPerPage = 15;
 
   const supabase = useMemo(() => {
     return createClient(
@@ -403,6 +405,8 @@ export function PortfolioPage() {
 
       const data: LogsResponse = await response.json();
       setLogs(prev => ({ ...prev, [strategy.id]: data.events || [] }));
+      // Reset to page 1 when logs are fetched
+      setLogsCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
     } catch (error: any) {
       console.error('Failed to fetch logs:', error);
       toast.error(error?.message || 'Failed to fetch logs');
@@ -422,7 +426,26 @@ export function PortfolioPage() {
       if (!logs[strategy.id]) {
         await fetchLogs(strategy);
       }
+      // Reset to page 1 when expanding
+      setLogsCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
     }
+  };
+
+  const setLogsPage = (strategyId: string, page: number) => {
+    setLogsCurrentPage(prev => ({ ...prev, [strategyId]: page }));
+  };
+
+  const getPaginatedLogs = (strategyId: string) => {
+    const strategyLogs = logs[strategyId] || [];
+    const currentPage = logsCurrentPage[strategyId] || 1;
+    const startIndex = (currentPage - 1) * logsPerPage;
+    const endIndex = startIndex + logsPerPage;
+    return strategyLogs.slice(startIndex, endIndex);
+  };
+
+  const getLogsTotalPages = (strategyId: string) => {
+    const strategyLogs = logs[strategyId] || [];
+    return Math.ceil(strategyLogs.length / logsPerPage);
   };
 
   const formatTimestamp = (timestamp: number) => {
@@ -629,18 +652,62 @@ export function PortfolioPage() {
                           Loading logs...
                         </div>
                       ) : logs[strategy.id] && logs[strategy.id].length > 0 ? (
-                        <div className="bg-white border border-slate-200 rounded-lg p-4 max-h-96 overflow-y-auto font-mono text-xs">
-                          <div className="space-y-1">
-                            {logs[strategy.id].map((event, index) => (
-                              <div key={index} className="text-slate-700">
-                                <span className="text-slate-500 mr-2">
-                                  [{formatTimestamp(event.timestamp)}]
-                                </span>
-                                <span className="text-slate-900">{event.message}</span>
-                              </div>
-                            ))}
+                        <>
+                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs">
+                            <div className="space-y-1">
+                              {getPaginatedLogs(strategy.id).map((event, index) => {
+                                const globalIndex = ((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + index;
+                                return (
+                                  <div key={globalIndex} className="text-slate-700">
+                                    <span className="text-slate-500 mr-2">
+                                      [{formatTimestamp(event.timestamp)}]
+                                    </span>
+                                    <span className="text-slate-900">{event.message}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
                           </div>
-                        </div>
+                          {getLogsTotalPages(strategy.id) > 1 && (
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                              <div className="text-xs text-slate-600">
+                                Showing {((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + 1} to {Math.min((logsCurrentPage[strategy.id] || 1) * logsPerPage, logs[strategy.id].length)} of {logs[strategy.id].length} log entries
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentPage = logsCurrentPage[strategy.id] || 1;
+                                    setLogsPage(strategy.id, Math.max(1, currentPage - 1));
+                                  }}
+                                  disabled={(logsCurrentPage[strategy.id] || 1) === 1}
+                                  className="h-7 text-xs"
+                                >
+                                  <ChevronLeft className="h-3 w-3" />
+                                  Previous
+                                </Button>
+                                <div className="text-xs text-slate-600">
+                                  Page {logsCurrentPage[strategy.id] || 1} of {getLogsTotalPages(strategy.id)}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentPage = logsCurrentPage[strategy.id] || 1;
+                                    const totalPages = getLogsTotalPages(strategy.id);
+                                    setLogsPage(strategy.id, Math.min(totalPages, currentPage + 1));
+                                  }}
+                                  disabled={(logsCurrentPage[strategy.id] || 1) >= getLogsTotalPages(strategy.id)}
+                                  className="h-7 text-xs"
+                                >
+                                  Next
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       ) : (
                         <div className="text-center py-8 text-slate-500 text-sm">
                           No logs available
