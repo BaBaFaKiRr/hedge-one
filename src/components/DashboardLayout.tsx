@@ -1,4 +1,4 @@
-import { ReactNode, useState } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import {
@@ -22,7 +22,25 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children, currentPage, onNavigate }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768); // md breakpoint
+      // On mobile, sidebar should be closed by default
+      if (window.innerWidth < 768) {
+        setIsSidebarOpen(false);
+      } else {
+        setIsSidebarOpen(true);
+      }
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const menuItems = [
     { id: 'home' as const, label: 'Dashboard', icon: LayoutDashboard },
@@ -31,6 +49,14 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
     { id: 'mykeys' as const, label: 'My Brokers', icon: Key },
     { id: 'telegram' as const, label: 'Telegram', icon: MessageSquare },
   ];
+
+  const handleNavigate = (page: 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio') => {
+    onNavigate(page);
+    // Close sidebar on mobile after navigation
+    if (isMobile) {
+      setIsSidebarOpen(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -83,10 +109,24 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex relative">
+        {/* Mobile Overlay */}
+        {isMobile && isSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/50 z-40"
+            onClick={() => setIsSidebarOpen(false)}
+          />
+        )}
+
         {/* Sidebar */}
         {isSidebarOpen && (
-          <aside className="w-64 bg-white border-r border-slate-200 min-h-[calc(100vh-4rem)]">
+          <aside
+            className={`${
+              isMobile
+                ? 'fixed left-0 top-16 bottom-0 z-50 w-64 shadow-xl'
+                : 'w-64'
+            } bg-white border-r border-slate-200 min-h-[calc(100vh-4rem)] transition-transform duration-300`}
+          >
             <nav className="p-4 space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -94,7 +134,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
                 return (
                   <button
                     key={item.id}
-                    onClick={() => onNavigate(item.id)}
+                    onClick={() => handleNavigate(item.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                       isActive
                         ? 'bg-slate-900 text-white'
@@ -111,7 +151,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         )}
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className={`flex-1 p-6 ${isMobile ? 'w-full' : ''}`}>
           {children}
         </main>
       </div>
