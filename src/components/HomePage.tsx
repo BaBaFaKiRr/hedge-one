@@ -102,13 +102,13 @@ export function HomePage() {
     setCurrentPage(1);
   }, [trades.length]);
 
-  // Calculate Performance and Win Rate from trades
+  // Calculate Performance and Win Rate from trades (This month's performance)
   const { performance, winRate } = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Filter trades for current month
+    // Filter trades for current month only
     const currentMonthTrades = trades.filter((trade) => {
       if (!trade.date_time) return false;
       const tradeDate = new Date(trade.date_time);
@@ -120,7 +120,8 @@ export function HomePage() {
     }
 
     // Group trades by stock_option and match Entry/Buy with Exit/Sell/CUTOFF
-    const tradePairs: Array<{ buy: Trade; sell: Trade | null }> = [];
+    // Only complete pairs (entry + exit) are considered - incomplete trades are ignored
+    const tradePairs: Array<{ buy: Trade; sell: Trade }> = [];
     const stockGroups = new Map<string, Trade[]>();
 
     // Group trades by stock_option
@@ -134,8 +135,9 @@ export function HomePage() {
     });
 
     // Match Buy/Entry with Sell/Exit/CUTOFF for each stock
+    // Only complete pairs are added to tradePairs - incomplete trades (entry without exit) are ignored
     stockGroups.forEach((stockTrades) => {
-      // Sort by date_time
+      // Sort by date_time to ensure chronological order
       stockTrades.sort((a, b) => {
         if (!a.date_time || !b.date_time) return 0;
         return new Date(a.date_time).getTime() - new Date(b.date_time).getTime();
@@ -150,20 +152,27 @@ export function HomePage() {
         if (isEntry && !buyTrade) {
           buyTrade = trade;
         } else if (isExit && buyTrade) {
+          // Only add complete pairs (both entry and exit exist)
           tradePairs.push({ buy: buyTrade, sell: trade });
           buyTrade = null;
+        } else if (isEntry && buyTrade) {
+          // If there's a new entry before the previous one was closed, ignore the previous entry
+          // This handles cases where multiple entries occur before an exit
+          buyTrade = trade;
         }
       });
+      // Note: Any remaining buyTrade without an exit is ignored (incomplete trade)
     });
 
-    // Calculate total PnL and return percentage
+    // Calculate total PnL and return percentage from complete trade pairs only
     let totalPnL = 0;
     let totalBuyValue = 0;
     let winningTrades = 0;
     let totalTrades = 0;
 
     tradePairs.forEach(({ buy, sell }) => {
-      if (!buy.price || !sell?.price) return;
+      // Ensure both prices exist (additional safety check)
+      if (!buy.price || !sell.price) return;
 
       const buyPrice = buy.price;
       const sellPrice = sell.price;
@@ -198,7 +207,7 @@ export function HomePage() {
         ? `+${performance.returnPercent.toFixed(2)}%` 
         : `${performance.returnPercent.toFixed(2)}%`,
       icon: BarChart3,
-      description: `PnL: ${performance.pnl >= 0 ? '+' : ''}$${performance.pnl.toFixed(2)}`,
+      description: `PnL: ${performance.pnl >= 0 ? '+' : ''}$${performance.pnl.toFixed(2)} | This month's`,
       color: performance.returnPercent >= 0 ? 'text-green-600' : 'text-red-600',
       bgColor: performance.returnPercent >= 0 ? 'bg-green-50' : 'bg-red-50',
     },
@@ -206,7 +215,7 @@ export function HomePage() {
       title: 'Win Rate',
       value: `${winRate.toFixed(1)}%`,
       icon: TrendingUp,
-      description: 'This month',
+      description: "This month's performance",
       color: 'text-amber-600',
       bgColor: 'bg-amber-50',
     },

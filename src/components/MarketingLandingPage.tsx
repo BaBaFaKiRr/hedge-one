@@ -44,8 +44,15 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
   }, []);
 
   const sendTelegramAlert = async (name: string, email: string, phone: string, message: string) => {
-    const botToken = '8560239509:AAEYpJirHIh0bPS3CTAML0II6C4z4D512AA';
-    const chatId = '7928874166';
+    // Get credentials from environment variables
+    const botToken = (import.meta as any).env?.VITE_TELEGRAM_BOT_TOKEN;
+    const chatId = (import.meta as any).env?.VITE_TELEGRAM_CHAT_ID;
+    
+    // Validate that credentials are set
+    if (!botToken || !chatId) {
+      console.error('Telegram credentials are not configured. Please set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in your environment variables.');
+      return; // Silently fail - don't block form submission
+    }
     
     const telegramMessage = `🔔 New Inquiry Received\n\n` +
       `👤 Name: ${name}\n` +
