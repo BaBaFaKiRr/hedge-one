@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Zap, Rocket, X } from 'lucide-react';
+import { Zap, Rocket, X, Info } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
@@ -51,9 +51,10 @@ interface DeployForm {
 
 interface StrategiesPageProps {
   onNavigate?: (page: 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio') => void;
+  onViewStrategyDetails?: (strategyId: string) => void;
 }
 
-export function StrategiesPage({ onNavigate }: StrategiesPageProps) {
+export function StrategiesPage({ onNavigate, onViewStrategyDetails }: StrategiesPageProps) {
   const { accessToken, user } = useAuth();
   const [strategies, setStrategies] = useState<StrategyRow[]>([]);
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
@@ -293,14 +294,24 @@ export function StrategiesPage({ onNavigate }: StrategiesPageProps) {
                     <CardDescription className="flex-1 text-sm text-slate-600 line-clamp-3 mb-4 min-h-[60px]">
                       {strategy.description || 'No description available'}
                     </CardDescription>
-                    <Button
-                      className="w-full mt-auto"
-                      onClick={() => handleDeploy(strategy)}
-                      disabled={deployingId === strategy.id}
-                    >
-                      <Rocket className="mr-2 h-4 w-4" />
-                      {deployingId === strategy.id ? 'Deploying...' : 'Deploy'}
-                    </Button>
+                    <div className="flex flex-col gap-2 mt-auto">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => onViewStrategyDetails?.(strategy.id)}
+                      >
+                        <Info className="mr-2 h-4 w-4" />
+                        Details
+                      </Button>
+                      <Button
+                        className="w-full"
+                        onClick={() => handleDeploy(strategy)}
+                        disabled={deployingId === strategy.id}
+                      >
+                        <Rocket className="mr-2 h-4 w-4" />
+                        {deployingId === strategy.id ? 'Deploying...' : 'Deploy'}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               ))}

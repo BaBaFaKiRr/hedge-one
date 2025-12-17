@@ -14,10 +14,13 @@ import { LayoutDashboard, Key, LogOut, Menu, X, MessageSquare, Zap, Briefcase } 
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
+type BasePage = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio';
+type ExtendedPage = BasePage | 'strategy-detail';
+
 interface DashboardLayoutProps {
   children: ReactNode;
-  currentPage: 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio';
-  onNavigate: (page: 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio') => void;
+  currentPage: ExtendedPage;
+  onNavigate: (page: ExtendedPage) => void;
 }
 
 export function DashboardLayout({ children, currentPage, onNavigate }: DashboardLayoutProps) {
@@ -50,13 +53,16 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
     { id: 'telegram' as const, label: 'Telegram', icon: MessageSquare },
   ];
 
-  const handleNavigate = (page: 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio') => {
+  const handleNavigate = (page: BasePage) => {
     onNavigate(page);
     // Close sidebar on mobile after navigation
     if (isMobile) {
       setIsSidebarOpen(false);
     }
   };
+
+  // Map strategy-detail to strategies for active state
+  const activePageForMenu = currentPage === 'strategy-detail' ? 'strategies' : currentPage;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -130,7 +136,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
             <nav className="p-4 space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
-                const isActive = currentPage === item.id;
+                const isActive = activePageForMenu === item.id;
                 return (
                   <button
                     key={item.id}

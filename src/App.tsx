@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './components/AuthContext';
 import { MarketingLandingPage } from './components/MarketingLandingPage';
 import { LandingPage } from './components/LandingPage';
@@ -7,12 +7,16 @@ import { HomePage } from './components/HomePage';
 import { MyKeysPage } from './components/MyKeysPage';
 import { TelegramPage } from './components/TelegramPage';
 import { StrategiesPage } from './components/StrategiesPage';
+import { StrategyDetailPage } from './components/StrategyDetailPage';
 import { PortfolioPage } from './components/PortfolioPage';
 import { Toaster } from './components/ui/sonner';
 
+type PageType = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'strategy-detail';
+
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
-  const [currentPage, setCurrentPage] = useState<'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio'>('home');
+  const [currentPage, setCurrentPage] = useState<PageType>('home');
+  const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
   const [showLogin, setShowLogin] = useState(false);
 
   if (isLoading) {
@@ -30,6 +34,16 @@ function AppContent() {
     return <MarketingLandingPage onGetStarted={() => setShowLogin(true)} />;
   }
 
+  const handleNavigateToStrategyDetail = (strategyId: string) => {
+    setSelectedStrategyId(strategyId);
+    setCurrentPage('strategy-detail');
+  };
+
+  const handleBackFromStrategyDetail = () => {
+    setSelectedStrategyId(null);
+    setCurrentPage('strategies');
+  };
+
   const renderPage = () => {
     switch (currentPage) {
       case 'home':
@@ -39,7 +53,25 @@ function AppContent() {
       case 'telegram':
         return <TelegramPage />;
       case 'strategies':
-        return <StrategiesPage onNavigate={setCurrentPage} />;
+        return (
+          <StrategiesPage 
+            onNavigate={(page) => setCurrentPage(page)} 
+            onViewStrategyDetails={handleNavigateToStrategyDetail}
+          />
+        );
+      case 'strategy-detail':
+        return selectedStrategyId ? (
+          <StrategyDetailPage 
+            strategyId={selectedStrategyId} 
+            onBack={handleBackFromStrategyDetail}
+            onNavigate={(page) => setCurrentPage(page)}
+          />
+        ) : (
+          <StrategiesPage 
+            onNavigate={(page) => setCurrentPage(page)}
+            onViewStrategyDetails={handleNavigateToStrategyDetail}
+          />
+        );
       case 'portfolio':
         return <PortfolioPage />;
       default:
