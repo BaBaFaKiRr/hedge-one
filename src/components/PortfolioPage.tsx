@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle, Rocket } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
@@ -94,6 +94,7 @@ export function PortfolioPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
   const [isRestartingStrategy, setIsRestartingStrategy] = useState<string | null>(null);
+  const [isRedeploying, setIsRedeploying] = useState<string | null>(null);
   
   // Logs state
   const [expandedLogsId, setExpandedLogsId] = useState<string | null>(null);
@@ -418,6 +419,70 @@ export function PortfolioPage() {
       toast.error(err?.message || 'Failed to delete strategy');
     } finally {
       setIsDeleting(null);
+    }
+  };
+
+  const redeployStrategyFromError = async (strategy: UserStrategyDisplay) => {
+    if (!user?.id) return;
+    setIsRedeploying(strategy.id);
+    try {
+      // First, fetch the full strategy data from user_strategies_in_error
+      const { data: errorStrategyData, error: fetchError } = await supabase
+        .from('user_strategies_in_error')
+        .select('*')
+        .eq('id', strategy.id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+      if (!errorStrategyData) throw new Error('Strategy not found in error table');
+
+      // Prepare payload for user_strategies table
+      const payload = {
+        user_id: errorStrategyData.user_id,
+        strategy_id: errorStrategyData.strategy_id,
+        broker_id: errorStrategyData.broker_id,
+        telegram_chat_id: errorStrategyData.telegram_chat_id,
+        qty: errorStrategyData.qty,
+        dry_run: errorStrategyData.dry_run,
+        active: errorStrategyData.active ?? true,
+        config_version: errorStrategyData.config_version ?? 0,
+        task_arn: errorStrategyData.task_arn,
+        last_task_status: errorStrategyData.last_task_status,
+        last_seen: errorStrategyData.last_seen,
+        created_at: errorStrategyData.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Insert into user_strategies table
+      const { error: insertError } = await supabase
+        .from('user_strategies')
+        .insert([payload]);
+
+      if (insertError) {
+        // Check if it's a unique constraint violation (strategy already exists)
+        if (insertError.code === '23505' || insertError.message?.includes('unique')) {
+          throw new Error('This strategy is already deployed. Please check the Active Strategies section.');
+        }
+        throw insertError;
+      }
+
+      // Delete from user_strategies_in_error table
+      const { error: deleteError } = await supabase
+        .from('user_strategies_in_error')
+        .delete()
+        .eq('id', strategy.id)
+        .eq('user_id', user.id);
+      
+      if (deleteError) throw deleteError;
+
+      toast.success(`Strategy "${strategy.strategy_name}" re-deployed successfully!`);
+      await fetchData();
+    } catch (err: any) {
+      console.error('Re-deploy failed:', err);
+      toast.error(err?.message || 'Failed to re-deploy strategy');
+    } finally {
+      setIsRedeploying(null);
     }
   };
 
@@ -795,7 +860,7 @@ export function PortfolioPage() {
                   key={strategy.id}
                   className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors"
                 >
-                  {/* First line: Strategy Name (bold) with Delete button right-aligned */}
+                  {/* First line: Strategy Name (bold) with Re-deploy and Delete buttons right-aligned */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-xl font-bold text-slate-900">
                       {strategy.strategy_name || 'Unknown'}
@@ -803,11 +868,20 @@ export function PortfolioPage() {
                     <div className="flex items-center gap-2">
                       <Button
                         size="sm"
+                        variant="default"
+                        onClick={() => redeployStrategyFromError(strategy)}
+                        disabled={isRedeploying === strategy.id || isDeleting === strategy.id}
+                      >
+                        <Rocket className={`mr-2 h-4 w-4 ${isRedeploying === strategy.id ? 'animate-pulse' : ''}`} />
+                        {isRedeploying === strategy.id ? 'Re-deploying...' : 'Re-deploy'}
+                      </Button>
+                      <Button
+                        size="sm"
                         variant="destructive"
                         onClick={() => deleteStrategyFromError(strategy)}
-                        disabled={isDeleting === strategy.id}
+                        disabled={isDeleting === strategy.id || isRedeploying === strategy.id}
                       >
-                        <Trash2 className="mr-2 h-4 w-4" /> 
+                        <Trash2 className="mr-2 h-4 w-4" />
                         {isDeleting === strategy.id ? 'Deleting...' : 'Delete'}
                       </Button>
                     </div>
