@@ -13,7 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
@@ -81,6 +81,7 @@ interface LogsResponse {
 export function PortfolioPage() {
   const { accessToken, user } = useAuth();
   const [strategies, setStrategies] = useState<UserStrategyDisplay[]>([]);
+  const [strategiesInError, setStrategiesInError] = useState<UserStrategyDisplay[]>([]);
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
   const [telegrams, setTelegrams] = useState<TelegramRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -134,6 +135,18 @@ export function PortfolioPage() {
 
       if (strategiesError) throw strategiesError;
 
+      // Fetch strategies in error
+      const { data: userStrategiesInError, error: strategiesInErrorError } = await supabase
+        .from('user_strategies_in_error')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (strategiesInErrorError) {
+        console.error('Error fetching strategies in error:', strategiesInErrorError);
+        // Don't throw - this is optional data
+      }
+
       // Fetch brokers
       const { data: brokersData, error: brokersError } = await supabase
         .from('user_brokers')
@@ -152,12 +165,17 @@ export function PortfolioPage() {
 
       if (telegramsError) throw telegramsError;
 
-      // Fetch strategy names
-      const strategyIds = (userStrategies || []).map(s => s.strategy_id);
+      // Fetch strategy names for both active and error strategies
+      const allStrategyIds = [
+        ...(userStrategies || []).map(s => s.strategy_id),
+        ...(userStrategiesInError || []).map(s => s.strategy_id)
+      ];
+      const uniqueStrategyIds = [...new Set(allStrategyIds)];
+      
       const { data: strategiesData, error: strategiesCatalogError } = await supabase
         .from('strategy_catalog')
         .select('id, name')
-        .in('id', strategyIds);
+        .in('id', uniqueStrategyIds);
 
       if (strategiesCatalogError) throw strategiesCatalogError;
 
@@ -173,7 +191,15 @@ export function PortfolioPage() {
         telegram_label: strategy.telegram_chat_id ? telegramsMap.get(strategy.telegram_chat_id) || null : null,
       }));
 
+      const enrichedStrategiesInError: UserStrategyDisplay[] = (userStrategiesInError || []).map(strategy => ({
+        ...strategy,
+        strategy_name: strategiesMap.get(strategy.strategy_id) || strategy.strategy_id,
+        broker_name: strategy.broker_id ? brokersMap.get(strategy.broker_id) || null : null,
+        telegram_label: strategy.telegram_chat_id ? telegramsMap.get(strategy.telegram_chat_id) || null : null,
+      }));
+
       setStrategies(enrichedStrategies);
+      setStrategiesInError(enrichedStrategiesInError);
       setBrokers(brokersData || []);
       setTelegrams(telegramsData || []);
     } catch (error) {
@@ -356,6 +382,34 @@ export function PortfolioPage() {
       if (taskArn) {
         await stopTask(taskArn, strategy.strategy_name || 'Unknown');
       }
+
+      toast.success('Strategy deleted successfully');
+      await fetchData();
+    } catch (err: any) {
+      console.error('Delete failed:', err);
+      toast.error(err?.message || 'Failed to delete strategy');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
+
+  const deleteStrategyFromError = async (strategy: UserStrategyDisplay) => {
+    if (!user?.id) return;
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${strategy.strategy_name}" from error list? This action cannot be undone.`
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(strategy.id);
+    try {
+      // Delete the entry from user_strategies_in_error table
+      const { error: deleteError } = await supabase
+        .from('user_strategies_in_error')
+        .delete()
+        .eq('id', strategy.id)
+        .eq('user_id', user.id);
+      
+      if (deleteError) throw deleteError;
 
       toast.success('Strategy deleted successfully');
       await fetchData();
@@ -721,6 +775,87 @@ export function PortfolioPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Strategies in Error Section - Only show if there are entries */}
+      {strategiesInError.length > 0 && (
+        <Card className="border-red-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-600" />
+              Strategies in Error
+            </CardTitle>
+            <CardDescription>
+              Strategies that encountered errors and were moved to error state
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {strategiesInError.map((strategy) => (
+                <div
+                  key={strategy.id}
+                  className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors"
+                >
+                  {/* First line: Strategy Name (bold) with Delete button right-aligned */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-xl font-bold text-slate-900">
+                      {strategy.strategy_name || 'Unknown'}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteStrategyFromError(strategy)}
+                        disabled={isDeleting === strategy.id}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" /> 
+                        {isDeleting === strategy.id ? 'Deleting...' : 'Delete'}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Second line: Broker, Telegram, qty, dry_run all inline */}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Broker:</span>
+                      <span className="text-sm text-slate-900 font-medium">
+                        {strategy.broker_name || <span className="text-slate-400">Not connected</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Telegram:</span>
+                      <span className="text-sm text-slate-900 font-medium">
+                        {strategy.telegram_label || <span className="text-slate-400">Not connected</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Qty:</span>
+                      <span className="text-sm text-slate-900 font-medium">{strategy.qty ?? 1}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Dry Run:</span>
+                      {strategy.dry_run ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
+                          Enabled
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                          Disabled
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-slate-600">Last Status:</span>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                        {strategy.last_task_status || 'Error'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/** Edit Dialog */}
       <Dialog.Root open={dialogOpen} onOpenChange={(o) => {
