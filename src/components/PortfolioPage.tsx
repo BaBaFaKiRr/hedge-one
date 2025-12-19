@@ -90,6 +90,7 @@ export function PortfolioPage() {
   // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [isEditingFromError, setIsEditingFromError] = useState(false);
   const [form, setForm] = useState<EditForm | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
@@ -213,8 +214,9 @@ export function PortfolioPage() {
   };
 
   // Open dialog to edit strategy
-  const openEditDialog = (strategy: UserStrategyDisplay) => {
+  const openEditDialog = (strategy: UserStrategyDisplay, fromErrorTable: boolean = false) => {
     setEditingId(strategy.id);
+    setIsEditingFromError(fromErrorTable);
     setForm({
       broker_id: strategy.broker_id,
       telegram_chat_id: strategy.telegram_chat_id,
@@ -243,8 +245,9 @@ export function PortfolioPage() {
         updated_at: new Date().toISOString(),
       };
 
+      const tableName = isEditingFromError ? 'user_strategies_in_error' : 'user_strategies';
       const { error } = await supabase
-        .from('user_strategies')
+        .from(tableName)
         .update(payload)
         .eq('id', editingId)
         .eq('user_id', user.id);
@@ -860,12 +863,38 @@ export function PortfolioPage() {
                   key={strategy.id}
                   className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors"
                 >
-                  {/* First line: Strategy Name (bold) with Re-deploy and Delete buttons right-aligned */}
+                  {/* First line: Strategy Name (bold) with View Logs, Edit, Re-deploy and Delete buttons right-aligned */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-xl font-bold text-slate-900">
                       {strategy.strategy_name || 'Unknown'}
                     </div>
                     <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => toggleLogs(strategy)}
+                        disabled={!strategy.task_arn}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        {expandedLogsId === strategy.id ? (
+                          <>
+                            <ChevronUp className="mr-1 h-3 w-3" />
+                            Hide Logs
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="mr-1 h-3 w-3" />
+                            View Logs
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openEditDialog(strategy, true)}
+                      >
+                        <Edit3 className="mr-2 h-4 w-4" /> Edit
+                      </Button>
                       <Button
                         size="sm"
                         variant="default"
@@ -924,6 +953,91 @@ export function PortfolioPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Logs section - expandable */}
+                  {expandedLogsId === strategy.id && (
+                    <div className="mt-4 pt-4 border-t border-slate-200">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-semibold text-slate-900">Python Logs</h3>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => fetchLogs(strategy)}
+                          disabled={isLoadingLogs[strategy.id]}
+                          className="h-7"
+                        >
+                          <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingLogs[strategy.id] ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </Button>
+                      </div>
+                      {isLoadingLogs[strategy.id] ? (
+                        <div className="text-center py-8 text-slate-500 text-sm">
+                          Loading logs...
+                        </div>
+                      ) : logs[strategy.id] && logs[strategy.id].length > 0 ? (
+                        <>
+                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs">
+                            <div className="space-y-1">
+                              {getPaginatedLogs(strategy.id).map((event, index) => {
+                                const globalIndex = ((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + index;
+                                return (
+                                  <div key={globalIndex} className="text-slate-700">
+                                    <span className="text-slate-500 mr-2">
+                                      [{formatTimestamp(event.timestamp)}]
+                                    </span>
+                                    <span className="text-slate-900">{event.message}</span>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                          {getLogsTotalPages(strategy.id) > 1 && (
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                              <div className="text-xs text-slate-600">
+                                Showing {((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + 1} to {Math.min((logsCurrentPage[strategy.id] || 1) * logsPerPage, logs[strategy.id].length)} of {logs[strategy.id].length} log entries
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentPage = logsCurrentPage[strategy.id] || 1;
+                                    setLogsPage(strategy.id, Math.max(1, currentPage - 1));
+                                  }}
+                                  disabled={(logsCurrentPage[strategy.id] || 1) === 1}
+                                  className="h-7 text-xs"
+                                >
+                                  <ChevronLeft className="h-3 w-3" />
+                                  Previous
+                                </Button>
+                                <div className="text-xs text-slate-600">
+                                  Page {logsCurrentPage[strategy.id] || 1} of {getLogsTotalPages(strategy.id)}
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const currentPage = logsCurrentPage[strategy.id] || 1;
+                                    const totalPages = getLogsTotalPages(strategy.id);
+                                    setLogsPage(strategy.id, Math.min(totalPages, currentPage + 1));
+                                  }}
+                                  disabled={(logsCurrentPage[strategy.id] || 1) >= getLogsTotalPages(strategy.id)}
+                                  className="h-7 text-xs"
+                                >
+                                  Next
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="text-center py-8 text-slate-500 text-sm">
+                          No logs available
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -936,6 +1050,7 @@ export function PortfolioPage() {
         setDialogOpen(o);
         if (!o) {
           setEditingId(null);
+          setIsEditingFromError(false);
           setForm(null);
         }
       }}>
