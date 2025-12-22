@@ -102,6 +102,7 @@ export function HomePage() {
     setCurrentPage(1);
   }, [trades.length]);
 
+
   // Calculate Performance and Win Rate from trades (This month's performance)
   const { performance, winRate } = useMemo(() => {
     const now = new Date();

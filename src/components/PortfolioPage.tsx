@@ -35,6 +35,7 @@ interface UserStrategyRow {
   last_seen: Nullable<string>;
   created_at?: string;
   updated_at?: string;
+  error?: Nullable<string>;
 }
 
 interface StrategyCatalogRow {
@@ -953,6 +954,23 @@ export function PortfolioPage() {
                       </span>
                     </div>
                   </div>
+
+                  {/* Error message display */}
+                  {strategy.error && (
+                    <div className="mt-4 pt-4 border-t border-red-200">
+                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div className="flex items-start gap-2">
+                          <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                          <div className="flex-1">
+                            <h4 className="text-sm font-semibold text-red-900 mb-1">Error Message</h4>
+                            <p className="text-sm text-red-800 whitespace-pre-wrap break-words">
+                              {strategy.error}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Logs section - expandable */}
                   {expandedLogsId === strategy.id && (
