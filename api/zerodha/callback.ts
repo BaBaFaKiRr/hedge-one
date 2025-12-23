@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 function getCookie(req: VercelRequest, name: string) {
   const cookie = req.headers.cookie;
@@ -27,10 +27,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).send("Missing broker context");
     }
 
-    const supabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error("Missing Supabase environment variables:", {
+        hasUrl: !!supabaseUrl,
+        hasKey: !!supabaseKey,
+      });
+      return res.status(500).send("Server configuration error");
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     console.log("Cookie header:", req.headers.cookie);
 
