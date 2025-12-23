@@ -201,8 +201,12 @@ export function MyKeysPage() {
   };
 
   const openDailyLoginDialog = (broker: BrokerRow) => {
-    // Store broker ID in a cookie (expires in 5 minutes)
-    document.cookie = `zerodha_broker_id=${broker.id}; path=/; max-age=300; SameSite=Lax`;
+    document.cookie =
+      `zerodha_broker_id=${broker.id}; ` +
+      `path=/; ` +
+      `max-age=300; ` +
+      `SameSite=None; ` +
+      `Secure`;
   
     const loginUrl =
       `https://kite.zerodha.com/connect/login` +
@@ -210,6 +214,7 @@ export function MyKeysPage() {
   
     window.location.href = loginUrl;
   };
+  
   
 
   const deleteBroker = async (broker: BrokerRow) => {

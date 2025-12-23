@@ -32,6 +32,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
+    console.log("Cookie header:", req.headers.cookie);
+
     const { error } = await supabase
       .from("user_brokers")
       .update({
