@@ -150,7 +150,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         backdropFilter: 'blur(12px)',
         borderBottom: `1px solid ${neonGreen}33`
       }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <img 
               src={appLogo} 
@@ -162,7 +162,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               }}
             />
             <span style={{ 
-              fontSize: '1.25rem', 
+              fontSize: 'clamp(1rem, 4vw, 1.25rem)', 
               fontWeight: 'bold',
               background: `linear-gradient(to right, #ffffff, ${neonGreen})`,
               WebkitBackgroundClip: 'text',
@@ -177,7 +177,9 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
             style={{ 
               backgroundColor: neonGreen, 
               color: '#000000',
-              border: 'none'
+              border: 'none',
+              fontSize: 'clamp(0.875rem, 3vw, 1rem)',
+              padding: '0.5rem 1rem'
             }}
             className="hover:opacity-90 transition-all"
           >
@@ -326,9 +328,9 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       }} />
 
       {/* About Us Section */}
-      <section style={{ padding: '6rem 1.5rem', position: 'relative' }}>
+      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', position: 'relative' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '3rem', alignItems: 'center' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 'clamp(2rem, 5vw, 3rem)', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1.5rem' }}>
                 About <span style={{ color: neonGreen }}>HedgeOne</span>
@@ -342,22 +344,21 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 Our team operates across multiple asset classes—Stocks, Commodities, Futures & Options, 
                 and Cryptocurrencies—ensuring comprehensive coverage and diversified strategies for our clients.
               </p>
-              <div style={{ display: 'flex', gap: '1rem', paddingTop: '1rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', paddingTop: '1rem' }}>
                 {[
                   { value: '100+', label: 'Strategies' },
                   { value: '24/7', label: 'Monitoring' },
                   { value: '99.9%', label: 'Uptime' }
                 ].map((stat, i) => (
                   <div key={i} style={{ 
-                    flex: 1, 
-                    padding: '1rem', 
+                    padding: 'clamp(0.75rem, 2vw, 1rem)', 
                     backgroundColor: '#000000', 
                     border: `1px solid ${neonGreen}33`,
                     borderRadius: '0.75rem',
                     backdropFilter: 'blur(4px)'
                   }}>
-                    <div style={{ fontSize: '1.875rem', fontWeight: 'bold', color: neonGreen }}>{stat.value}</div>
-                    <div style={{ fontSize: '0.875rem', color: grey, marginTop: '0.25rem' }}>{stat.label}</div>
+                    <div style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', fontWeight: 'bold', color: neonGreen }}>{stat.value}</div>
+                    <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: grey, marginTop: '0.25rem' }}>{stat.label}</div>
                   </div>
                 ))}
               </div>
@@ -396,17 +397,17 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       </section>
 
       {/* Services Section */}
-      <section style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
+      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
               Our <span style={{ color: neonGreen }}>Services</span>
             </h2>
-            <p style={{ fontSize: '1.125rem', color: grey, maxWidth: '42rem', margin: '0 auto' }}>
+            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
               Comprehensive algorithmic trading solutions tailored to your needs
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
             {[
               {
                 icon: TrendingUp,
@@ -470,17 +471,17 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       </section>
 
       {/* Features / Why Us Section */}
-      <section style={{ padding: '6rem 1.5rem' }}>
+      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
               Why <span style={{ color: neonGreen }}>Choose Us</span>
             </h2>
-            <p style={{ fontSize: '1.125rem', color: grey, maxWidth: '42rem', margin: '0 auto' }}>
+            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
               Cutting-edge technology meets proven expertise
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
             {[
               { icon: Zap, title: 'Ultra-Low Latency Systems', desc: 'Microsecond execution speeds' },
               { icon: TrendingUp, title: 'Strategy Optimization', desc: 'Continuous performance tuning' },
@@ -527,17 +528,17 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       </section>
 
       {/* Contact / CTA Section */}
-      <section id="contact-section" style={{ padding: '6rem 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
+      <section id="contact-section" style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
         <div style={{ maxWidth: '896px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 3rem)' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
               Ready to <span style={{ color: neonGreen }}>Get Started?</span>
             </h2>
-            <p style={{ fontSize: '1.125rem', color: grey, maxWidth: '42rem', margin: '0 auto' }}>
+            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
               Let's discuss how HedgeOne can transform your trading operations
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 'clamp(1.5rem, 4vw, 2rem)' }}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               <div style={{ 
                 padding: '1.5rem', 
@@ -736,6 +737,27 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         @keyframes bounce {
           0%, 100% { transform: translateX(-50%) translateY(0); }
           50% { transform: translateX(-50%) translateY(-10px); }
+        }
+        @media (max-width: 768px) {
+          /* Mobile-specific styles */
+          .mobile-stack {
+            display: flex;
+            flex-direction: column;
+          }
+          .mobile-half {
+            width: 100%;
+          }
+          /* Ensure tables don't overflow on mobile */
+          table {
+            display: block;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            width: 100%;
+          }
+          /* Make form inputs more touch-friendly */
+          input, textarea {
+            font-size: 16px !important; /* Prevents zoom on iOS */
+          }
         }
       `}</style>
     </div>

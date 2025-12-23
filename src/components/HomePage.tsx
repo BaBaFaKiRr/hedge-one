@@ -102,7 +102,6 @@ export function HomePage() {
     setCurrentPage(1);
   }, [trades.length]);
 
-
   // Calculate Performance and Win Rate from trades (This month's performance)
   const { performance, winRate } = useMemo(() => {
     const now = new Date();
@@ -223,14 +222,129 @@ export function HomePage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <>
+      <style>{`
+        /* Mobile-only styles - only apply below 768px */
+        @media (max-width: 767px) {
+          /* Make stats grid 2 columns on mobile */
+          .mobile-stats-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap: 0.75rem !important;
+          }
+          
+          /* Make stat cards more compact on mobile */
+          .mobile-stats-grid [data-slot="card"] {
+            gap: 0.5rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-header"] {
+            padding: 0.75rem 0.75rem 0.5rem 0.75rem !important;
+            gap: 0.5rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-title"] {
+            font-size: 0.75rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-content"] {
+            padding: 0 0.75rem 0.75rem 0.75rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-content"] > div:first-child {
+            font-size: 1.125rem !important;
+            margin-bottom: 0.25rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-content"] > p {
+            font-size: 0.75rem !important;
+            line-height: 1.2 !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-header"] .p-2 {
+            padding: 0.375rem !important;
+          }
+          
+          .mobile-stats-grid [data-slot="card-header"] .h-5 {
+            height: 1rem !important;
+            width: 1rem !important;
+          }
+          
+          /* Hide desktop table on mobile */
+          .desktop-trades-table {
+            display: none !important;
+          }
+          
+          /* Show mobile card view */
+          .mobile-trades-cards {
+            display: block;
+          }
+          
+          .mobile-trade-card {
+            border: 1px solid rgb(226, 232, 240);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+          }
+          
+          .mobile-trade-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+          }
+          
+          .mobile-trade-stock {
+            font-weight: 600;
+            color: rgb(15, 23, 42);
+            font-size: 0.875rem;
+          }
+          
+          .mobile-trade-position {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background-color: rgb(241, 245, 249);
+            border-radius: 0.25rem;
+            text-transform: capitalize;
+            color: rgb(51, 65, 85);
+          }
+          
+          .mobile-trade-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+          }
+          
+          .mobile-trade-label {
+            color: rgb(71, 85, 105);
+          }
+          
+          .mobile-trade-value {
+            font-weight: 500;
+            color: rgb(15, 23, 42);
+          }
+        }
+        
+        /* Desktop styles - hide mobile view, show table */
+        @media (min-width: 768px) {
+          .mobile-trades-cards {
+            display: none !important;
+          }
+          
+          .desktop-trades-table {
+            display: block;
+          }
+        }
+      `}</style>
+      <div className="space-y-6">
       <div>
         <h1 className="text-slate-900 mb-2">Dashboard</h1>
         <p className="text-slate-600">Welcome back! Here's an overview of your trading activity.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mobile-stats-grid">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -266,34 +380,66 @@ export function HomePage() {
           ) : trades.length === 0 ? (
             <div className="text-slate-500 text-sm">No trades recorded yet.</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Stock / Option</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Date / Time</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <>
+              {/* Mobile Card View - Only visible on mobile */}
+              <div className="mobile-trades-cards">
                 {paginatedTrades.map((trade) => (
-                  <TableRow key={trade.id}>
-                    <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                    <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
-                    <TableCell>
-                      {trade.price !== null && trade.price !== undefined
-                        ? `$${trade.price.toFixed(2)}`
-                        : '—'}
-                    </TableCell>
-                    <TableCell>
-                      {trade.date_time
-                        ? new Date(trade.date_time).toLocaleString()
-                        : '—'}
-                    </TableCell>
-                  </TableRow>
+                  <div key={trade.id} className="mobile-trade-card">
+                    <div className="mobile-trade-header">
+                      <span className="mobile-trade-stock">{trade.stock_option ?? '—'}</span>
+                      <span className="mobile-trade-position">{trade.position ?? '—'}</span>
+                    </div>
+                    <div className="mobile-trade-row">
+                      <span className="mobile-trade-label">Price:</span>
+                      <span className="mobile-trade-value">
+                        {trade.price !== null && trade.price !== undefined
+                          ? `$${trade.price.toFixed(2)}`
+                          : '—'}
+                      </span>
+                    </div>
+                    <div className="mobile-trade-row">
+                      <span className="mobile-trade-label">Date:</span>
+                      <span className="mobile-trade-value">
+                        {trade.date_time
+                          ? new Date(trade.date_time).toLocaleString()
+                          : '—'}
+                      </span>
+                    </div>
+                  </div>
                 ))}
-              </TableBody>
-            </Table>
+              </div>
+              {/* Desktop Table View - Only visible on desktop */}
+              <div className="desktop-trades-table">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Stock / Option</TableHead>
+                      <TableHead>Position</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Date / Time</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paginatedTrades.map((trade) => (
+                      <TableRow key={trade.id}>
+                        <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                        <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                        <TableCell>
+                          {trade.price !== null && trade.price !== undefined
+                            ? `$${trade.price.toFixed(2)}`
+                            : '—'}
+                        </TableCell>
+                        <TableCell>
+                          {trade.date_time
+                            ? new Date(trade.date_time).toLocaleString()
+                            : '—'}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
           {trades.length > 0 && totalPages > 1 && (
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-200">
@@ -328,5 +474,6 @@ export function HomePage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }
