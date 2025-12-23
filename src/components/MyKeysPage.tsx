@@ -298,9 +298,6 @@ export function MyKeysPage() {
           <Button onClick={openAddDialog} variant="default">
             <Plus className="mr-2 h-4 w-4" /> Add Broker
           </Button>
-          <Button onClick={handleRestart} variant="outline" disabled={isRestarting}>
-            {isRestarting ? 'Restarting...' : 'Restart'}
-          </Button>
         </div>
       </div>
 
