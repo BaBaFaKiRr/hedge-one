@@ -598,7 +598,97 @@ export function PortfolioPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <>
+      <style>{`
+        /* Mobile-only styles - only apply below 768px */
+        @media (max-width: 767px) {
+          /* Strategy card container */
+          .portfolio-strategy-card {
+            padding: 0.75rem !important;
+            overflow-x: hidden !important;
+          }
+          
+          /* Header section - stack vertically on mobile */
+          .portfolio-strategy-header {
+            flex-direction: column !important;
+            align-items: flex-start !important;
+            gap: 0.75rem !important;
+          }
+          
+          .portfolio-strategy-title {
+            font-size: 1.125rem !important;
+            width: 100% !important;
+            word-break: break-word !important;
+          }
+          
+          /* Button container - wrap on mobile */
+          .portfolio-strategy-actions {
+            flex-wrap: wrap !important;
+            width: 100% !important;
+            gap: 0.5rem !important;
+          }
+          
+          .portfolio-strategy-actions button {
+            flex: 1 1 calc(50% - 0.25rem) !important;
+            min-width: calc(50% - 0.25rem) !important;
+            font-size: 0.75rem !important;
+            padding: 0.375rem 0.5rem !important;
+          }
+          
+          .portfolio-strategy-actions button svg {
+            width: 0.875rem !important;
+            height: 0.875rem !important;
+            margin-right: 0.25rem !important;
+          }
+          
+          /* Details section - 2 column grid on mobile */
+          .portfolio-strategy-details {
+            display: grid !important;
+            grid-template-columns: repeat(2, 1fr) !important;
+            gap: 0.75rem !important;
+          }
+          
+          /* Make Status (5th item) span full width and start at column 1 */
+          .portfolio-strategy-details > .portfolio-strategy-detail-item:nth-child(5) {
+            grid-column: 1 / -1 !important;
+          }
+          
+          .portfolio-strategy-detail-item {
+            justify-content: flex-start !important;
+            align-items: flex-start !important;
+            gap: 0.5rem !important;
+            width: 100% !important;
+          }
+          
+          /* Error message - prevent overflow */
+          .portfolio-error-message {
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            max-width: 100% !important;
+          }
+          
+          /* Logs section adjustments */
+          .portfolio-logs-container {
+            font-size: 0.7rem !important;
+          }
+          
+          .portfolio-logs-pagination {
+            flex-direction: column !important;
+            gap: 0.75rem !important;
+            align-items: stretch !important;
+          }
+          
+          .portfolio-logs-pagination > div:first-child {
+            text-align: center !important;
+          }
+          
+          .portfolio-logs-pagination > div:last-child {
+            justify-content: center !important;
+            flex-wrap: wrap !important;
+          }
+        }
+      `}</style>
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-slate-900 mb-1">Portfolio</h1>
@@ -626,14 +716,14 @@ export function PortfolioPage() {
               {strategies.map((strategy) => (
                 <div
                   key={strategy.id}
-                  className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors"
+                  className="border border-slate-200 rounded-lg p-4 hover:bg-slate-50 transition-colors portfolio-strategy-card"
                 >
                   {/* First line: Strategy Name (bold) with Edit and Delete buttons right-aligned */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-xl font-bold text-slate-900">
+                  <div className="flex items-center justify-between mb-3 portfolio-strategy-header">
+                    <div className="text-xl font-bold text-slate-900 portfolio-strategy-title">
                       {strategy.strategy_name || 'Unknown'}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-actions">
                       <Button
                         size="sm"
                         variant="outline"
@@ -682,24 +772,24 @@ export function PortfolioPage() {
                   </div>
                   
                   {/* Second line: Broker, Telegram, qty, dry_run, status all inline */}
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4 flex-wrap portfolio-strategy-details">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Broker:</span>
                       <span className="text-sm text-slate-900 font-medium">
                         {strategy.broker_name || <span className="text-slate-400">Not connected</span>}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Telegram:</span>
                       <span className="text-sm text-slate-900 font-medium">
                         {strategy.telegram_label || <span className="text-slate-400">Not connected</span>}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Qty:</span>
                       <span className="text-sm text-slate-900 font-medium">{strategy.qty ?? 1}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Dry Run:</span>
                       {strategy.dry_run ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
@@ -711,7 +801,7 @@ export function PortfolioPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Status:</span>
                       {(() => {
                         const status = strategy.last_task_status?.toUpperCase();
@@ -781,7 +871,7 @@ export function PortfolioPage() {
                         </div>
                       ) : logs[strategy.id] && logs[strategy.id].length > 0 ? (
                         <>
-                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs">
+                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs portfolio-logs-container">
                             <div className="space-y-1">
                               {getPaginatedLogs(strategy.id).map((event, index) => {
                                 const globalIndex = ((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + index;
@@ -797,7 +887,7 @@ export function PortfolioPage() {
                             </div>
                           </div>
                           {getLogsTotalPages(strategy.id) > 1 && (
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 portfolio-logs-pagination">
                               <div className="text-xs text-slate-600">
                                 Showing {((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + 1} to {Math.min((logsCurrentPage[strategy.id] || 1) * logsPerPage, logs[strategy.id].length)} of {logs[strategy.id].length} log entries
                               </div>
@@ -867,14 +957,14 @@ export function PortfolioPage() {
               {strategiesInError.map((strategy) => (
                 <div
                   key={strategy.id}
-                  className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors"
+                  className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors portfolio-strategy-card"
                 >
                   {/* First line: Strategy Name (bold) with View Logs, Edit, Re-deploy and Delete buttons right-aligned */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-xl font-bold text-slate-900">
+                  <div className="flex items-center justify-between mb-3 portfolio-strategy-header">
+                    <div className="text-xl font-bold text-slate-900 portfolio-strategy-title">
                       {strategy.strategy_name || 'Unknown'}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-actions">
                       <Button
                         size="sm"
                         variant="outline"
@@ -923,24 +1013,24 @@ export function PortfolioPage() {
                   </div>
                   
                   {/* Second line: Broker, Telegram, qty, dry_run all inline */}
-                  <div className="flex items-center gap-4 flex-wrap">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-4 flex-wrap portfolio-strategy-details">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Broker:</span>
                       <span className="text-sm text-slate-900 font-medium">
                         {strategy.broker_name || <span className="text-slate-400">Not connected</span>}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Telegram:</span>
                       <span className="text-sm text-slate-900 font-medium">
                         {strategy.telegram_label || <span className="text-slate-400">Not connected</span>}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Qty:</span>
                       <span className="text-sm text-slate-900 font-medium">{strategy.qty ?? 1}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Dry Run:</span>
                       {strategy.dry_run ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">
@@ -952,7 +1042,7 @@ export function PortfolioPage() {
                         </span>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
                       <span className="text-sm text-slate-600">Last Status:</span>
                       <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">
                         {strategy.last_task_status || 'Error'}
@@ -968,7 +1058,7 @@ export function PortfolioPage() {
                           <AlertTriangle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
                           <div className="flex-1">
                             <h4 className="text-sm font-semibold text-red-900 mb-1">Error Message</h4>
-                            <p className="text-sm text-red-800 whitespace-pre-wrap break-words">
+                            <p className="text-sm text-red-800 whitespace-pre-wrap break-words portfolio-error-message">
                               {strategy.error}
                             </p>
                           </div>
@@ -1198,6 +1288,7 @@ export function PortfolioPage() {
         </Dialog.Portal>
       </Dialog.Root>
     </div>
+    </>
   );
 }
 

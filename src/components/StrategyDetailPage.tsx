@@ -354,7 +354,82 @@ export function StrategyDetailPage({ strategyId, onBack, onNavigate }: StrategyD
   const isPositivePnL = totalPnL >= 0;
 
   return (
-    <div className="space-y-6">
+    <>
+      <style>{`
+        /* Mobile-only styles - only apply below 768px */
+        @media (max-width: 767px) {
+          /* Make metrics grid 2 columns on mobile */
+          .mobile-metrics-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+          }
+          
+          /* Hide desktop table on mobile */
+          .desktop-trades-table {
+            display: none !important;
+          }
+          
+          /* Show mobile card view */
+          .mobile-trades-cards {
+            display: block;
+          }
+          
+          .mobile-trade-card {
+            border: 1px solid rgb(226, 232, 240);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+          }
+          
+          .mobile-trade-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.5rem;
+          }
+          
+          .mobile-trade-security {
+            font-weight: 600;
+            color: rgb(15, 23, 42);
+            font-size: 0.875rem;
+          }
+          
+          .mobile-trade-type {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            text-transform: capitalize;
+          }
+          
+          .mobile-trade-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
+          }
+          
+          .mobile-trade-label {
+            color: rgb(71, 85, 105);
+          }
+          
+          .mobile-trade-value {
+            font-weight: 500;
+            color: rgb(15, 23, 42);
+          }
+        }
+        
+        /* Desktop styles - hide mobile view, show table */
+        @media (min-width: 768px) {
+          .mobile-trades-cards {
+            display: none !important;
+          }
+          
+          .desktop-trades-table {
+            display: block;
+          }
+        }
+      `}</style>
+      <div className="space-y-6">
       {/* Back Button */}
       <Button variant="ghost" onClick={onBack} className="gap-2 hover:bg-slate-100">
         <ArrowLeft className="h-4 w-4" />
@@ -390,7 +465,7 @@ export function StrategyDetailPage({ strategyId, onBack, onNavigate }: StrategyD
       </div>
 
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mobile-metrics-grid">
         <Card className="border-l-4 border-l-blue-500">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
@@ -542,7 +617,43 @@ export function StrategyDetailPage({ strategyId, onBack, onNavigate }: StrategyD
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
+            {/* Mobile Card View */}
+            <div className="mobile-trades-cards">
+              {trades.slice(-10).reverse().map((trade, index) => (
+                <div key={index} className="mobile-trade-card">
+                  <div className="mobile-trade-header">
+                    <span className="mobile-trade-security">{trade.security || 'N/A'}</span>
+                    <span className={`mobile-trade-type ${
+                      trade.entry_exit?.toLowerCase() === 'buy'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {trade.entry_exit || 'N/A'}
+                    </span>
+                  </div>
+                  <div className="mobile-trade-row">
+                    <span className="mobile-trade-label">Date:</span>
+                    <span className="mobile-trade-value text-xs">
+                      {new Date(trade.date_time).toLocaleString('en-IN', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </span>
+                  </div>
+                  <div className="mobile-trade-row">
+                    <span className="mobile-trade-label">Price/Lot:</span>
+                    <span className="mobile-trade-value font-mono">
+                      {trade.price_lot ? formatCurrency(trade.price_lot) : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Desktop Table View */}
+            <div className="desktop-trades-table overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200">
@@ -729,5 +840,6 @@ export function StrategyDetailPage({ strategyId, onBack, onNavigate }: StrategyD
         </Dialog.Portal>
       </Dialog.Root>
     </div>
+    </>
   );
 }
