@@ -49,12 +49,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     return res.redirect(
-      "https://hedgeone.co.in"
+      "https://hedgeone.co.in/?zerodha=success"
     );
   } catch (err) {
     console.error("Zerodha callback error:", err);
     return res.redirect(
-      "https://hedgeone.co.in/dashboard?zerodha=failed"
+      "https://hedgeone.co.in/?zerodha=failed"
     );
   }
 }
