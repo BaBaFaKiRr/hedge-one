@@ -201,17 +201,16 @@ export function MyKeysPage() {
   };
 
   const openDailyLoginDialog = (broker: BrokerRow) => {
-    // Construct Zerodha login URL with callback redirect
-    // The callback URL should match your Vercel deployment URL
-    const callbackUrl = 'https://hedgeone.co.in/api/zerodha/callback';
+    // Store broker ID in a cookie (expires in 5 minutes)
+    document.cookie = `zerodha_broker_id=${broker.id}; path=/; max-age=300; SameSite=Lax`;
+  
     const loginUrl =
       `https://kite.zerodha.com/connect/login` +
-      `?api_key=${broker.api_key}` +
-      `&state=${broker.id}`;
-    
-    // Open Zerodha login URL in new tab
+      `?api_key=${broker.api_key}`;
+  
     window.location.href = loginUrl;
   };
+  
 
   const deleteBroker = async (broker: BrokerRow) => {
     if (!user?.id) return;
