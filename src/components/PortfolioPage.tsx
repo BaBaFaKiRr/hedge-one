@@ -288,7 +288,12 @@ export function PortfolioPage() {
       const requestBody = { taskArn: taskArn };
       console.log('Sending restart request:', requestBody);
       
-      const response = await fetch("https://rhc3n54flhhz2j5x7bydcaobhy0lkqck.lambda-url.ap-southeast-2.on.aws/", {
+      const taskRestartUrl = (import.meta as any).env?.VITE_TASK_RESTART_URL;
+      if (!taskRestartUrl) {
+        throw new Error('TASK_RESTART_URL environment variable is not set');
+      }
+      
+      const response = await fetch(taskRestartUrl, {
         method: "POST",
         headers: {
           'Content-Type': 'application/json',

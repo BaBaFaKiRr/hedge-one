@@ -258,27 +258,6 @@ export function MyKeysPage() {
     }
   };
 
-  const handleRestart = async () => {
-    setIsRestarting(true);
-    try {
-      const response = await fetch("https://be4ny3g67l.execute-api.us-east-1.amazonaws.com/Restart/restartservice", {
-        method: "POST",
-        headers: {}
-      });
-
-      if (!response.ok) {
-        throw new Error(`Restart failed: ${response.statusText}`);
-      }
-
-      toast.success('EC2 instance restart initiated');
-    } catch (error: any) {
-      console.error('Restart failed:', error);
-      toast.error(error?.message || 'Failed to restart EC2 instance');
-    } finally {
-      setIsRestarting(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">

@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_SUPABASE_ANON_KEY?: string
   readonly VITE_TELEGRAM_BOT_TOKEN?: string
   readonly VITE_TELEGRAM_CHAT_ID?: string
+  readonly VITE_RESTART_URL?: string
+  readonly VITE_TASK_RESTART_URL?: string
   // Add other env variables as needed
   [key: string]: any
 }
