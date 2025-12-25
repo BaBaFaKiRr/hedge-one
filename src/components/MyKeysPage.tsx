@@ -396,6 +396,7 @@ export function MyKeysPage() {
                     <SelectContent className="z-[10001]" style={{ zIndex: 11000 }}>
                       <SelectItem value="Angelone">Angelone</SelectItem>
                       <SelectItem value="Zerodha">Zerodha</SelectItem>
+                      <SelectItem value="Groww">Groww</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
