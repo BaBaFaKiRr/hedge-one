@@ -252,7 +252,7 @@ export function StrategiesPage({ onNavigate, onViewStrategyDetails }: Strategies
                 <SelectTrigger>
                   <SelectValue placeholder="Select Broker" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[10001]" style={{ zIndex: 11000 }}>
                   {brokers.map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
