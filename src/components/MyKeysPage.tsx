@@ -326,16 +326,6 @@ export function MyKeysPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-amber-200 bg-amber-50">
-        <CardContent className="pt-6">
-          <p className="text-amber-900">
-            Zerodha requires users to login to their accounts daily. If you are using Zerodha as your broker,<br /> 
-            click the "Daily Login" button to be redirected to Zerodha's login page. After logging in,<br />
-            you will be automatically redirected back and your authentication token will be saved.
-          </p>
-        </CardContent>
-      </Card>
-
       {/** Dialog - reused for Add and Edit */}
       <Dialog.Root open={dialogOpen} onOpenChange={(o) => {
         setDialogOpen(o);
