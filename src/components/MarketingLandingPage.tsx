@@ -368,25 +368,26 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 position: 'relative', 
                 background: `linear-gradient(to bottom right, ${neonGreen}1a, transparent)`,
                 borderRadius: '1rem',
-                padding: '2rem',
+                padding: 'clamp(1rem, 3vw, 2rem)',
                 border: `1px solid ${neonGreen}33`,
                 backdropFilter: 'blur(4px)'
               }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+                <div className="asset-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'clamp(0.5rem, 2vw, 1rem)' }}>
                   {['Stocks', 'Commodities', 'FnO', 'Crypto'].map((asset, i) => (
                     <div
                       key={asset}
                       style={{
-                        padding: '1.5rem',
+                        padding: 'clamp(0.75rem, 2vw, 1.5rem)',
                         backgroundColor: 'rgba(0, 0, 0, 0.5)',
                         border: `1px solid ${neonGreen}33`,
                         borderRadius: '0.75rem',
-                        transition: 'all 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        minWidth: 0
                       }}
                       className="hover:border-[#00FF5A] hover:shadow-[0_0_20px_rgba(0,255,90,0.3)]"
                     >
-                      <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: neonGreen, marginBottom: '0.5rem' }}>{asset}</div>
-                      <div style={{ fontSize: '0.875rem', color: grey }}>Multi-Asset Trading</div>
+                      <div style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', fontWeight: 'bold', color: neonGreen, marginBottom: '0.5rem' }}>{asset}</div>
+                      <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: grey }}>Multi-Asset Trading</div>
                     </div>
                   ))}
                 </div>
@@ -746,6 +747,11 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
           }
           .mobile-half {
             width: 100%;
+          }
+          /* Make asset grid single column on mobile */
+          .asset-grid {
+            grid-template-columns: 1fr !important;
+            gap: 0.75rem !important;
           }
           /* Ensure tables don't overflow on mobile */
           table {
