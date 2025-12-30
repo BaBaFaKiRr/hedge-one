@@ -725,6 +725,17 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
             <div style={{ color: grey, fontSize: '0.875rem', textAlign: 'center' }}>
               <p>© {new Date().getFullYear()} HedgeOne. All rights reserved.</p>
               <p style={{ marginTop: '0.25rem' }}>Next-Gen Algorithmic Trading Solutions</p>
+                <p style={{ marginTop: '0.25rem' }}>
+                  Charts powered by{' '}
+                  <a
+                    href="https://www.tradingview.com"
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{ color: '#7dd3fc', textDecoration: 'underline' }}
+                  >
+                    TradingView
+                  </a>
+                </p>
             </div>
           </div>
         </div>
