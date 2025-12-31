@@ -252,8 +252,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               margin: '0 auto 2rem',
               lineHeight: '1.6'
             }}>
-              We curate high-performance algorithmic trading strategies and build custom algotrading software 
-              across Stocks, Commodities, FnO, and Cryptocurrencies.
+              Deploy and Manage Algorithmic Trading Strategies — Either Our In-House Strategies or get one Custom-Built for You.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', alignItems: 'center', paddingTop: '1rem' }}>
               <Button
@@ -269,7 +268,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 }}
                 className="hover:opacity-90 hover:scale-105 transition-all"
               >
-                Book a Strategy Call
+                Book a Free Consultation
                 <ArrowRight style={{ marginLeft: '0.5rem', width: '1.25rem', height: '1.25rem' }} />
               </Button>
               <Button
@@ -286,7 +285,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 }}
                 className="hover:bg-opacity-10 transition-all"
               >
-                Explore Our Systems
+                Explore Our Strategies
               </Button>
             </div>
           </div>
@@ -337,16 +336,14 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               </h2>
               <p style={{ fontSize: '1.125rem', color: grey, lineHeight: '1.75', marginBottom: '1rem' }}>
                 HedgeOne specializes in curating high-performance algorithmic trading strategies 
-                and developing custom algotrading software solutions. We combine quantitative research, 
-                advanced technology, and deep market expertise to deliver trading systems that perform.
+                and developing custom algotrading software solutions. We transform your strategy
+                ideas into high-performing, scalable trading systems.
               </p>
               <p style={{ fontSize: '1.125rem', color: grey, lineHeight: '1.75', marginBottom: '1.5rem' }}>
-                Our team operates across multiple asset classes—Stocks, Commodities, Futures & Options, 
-                and Cryptocurrencies—ensuring comprehensive coverage and diversified strategies for our clients.
+                We will work with you to backtest and optimize your strategy, and then deploy it to your trading platform.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', paddingTop: '1rem' }}>
                 {[
-                  { value: '100+', label: 'Strategies' },
                   { value: '24/7', label: 'Monitoring' },
                   { value: '99.9%', label: 'Uptime' }
                 ].map((stat, i) => (
@@ -404,9 +401,6 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
               Our <span style={{ color: neonGreen }}>Services</span>
             </h2>
-            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
-              Comprehensive algorithmic trading solutions tailored to your needs
-            </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
             {[
@@ -479,13 +473,13 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               Why <span style={{ color: neonGreen }}>Choose Us</span>
             </h2>
             <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
-              Cutting-edge technology meets proven expertise
+              Cause the trades you see on strategy "details page" are the trades we make with our own money.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
             {[
               { icon: Zap, title: 'Ultra-Low Latency Systems', desc: 'Microsecond execution speeds' },
-              { icon: TrendingUp, title: 'Strategy Optimization', desc: 'Continuous performance tuning' },
+              { icon: TrendingUp, title: 'Trading View', desc: 'We use TradingView advanced charts and indicators' },
               { icon: Shield, title: 'High-Availability Architecture', desc: '99.9% uptime guarantee' },
               { icon: Activity, title: 'Real-Time Risk Engine', desc: 'Advanced risk management' },
               { icon: Clock, title: '24/7 Monitoring', desc: 'Round-the-clock surveillance' },
@@ -551,7 +545,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 <Mail style={{ width: '2rem', height: '2rem', color: neonGreen, marginBottom: '1rem' }} />
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>Email Us</h3>
                 <a href="mailto:contact@hedgeone.com" style={{ color: neonGreen, textDecoration: 'none' }} className="hover:underline">
-                  contact@hedgeone.com
+                  contact@hedgeone.co.in
                 </a>
               </div>
               <div style={{ 
