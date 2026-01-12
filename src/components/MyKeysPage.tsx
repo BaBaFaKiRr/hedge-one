@@ -32,11 +32,47 @@ interface BrokerRow {
   mpin: Nullable<string>;
   totp: Nullable<string>;
   notes: Nullable<string>;
+  mobile_number: Nullable<string>;
   created_at?: string;
   updated_at?: string;
 }
 
 interface BrokerForm extends Omit<BrokerRow, 'id' | 'user_id' | 'created_at' | 'updated_at'> {}
+
+// Platform configuration: defines required fields for each platform
+const PLATFORM_CONFIG: Record<string, {
+  required: string[];
+  optional?: string[];
+}> = {
+  Angelone: {
+    required: ['api_key', 'client_id', 'mpin', 'totp'],
+  },
+  Zerodha: {
+    required: ['api_key', 'api_secret'],
+  },
+  Groww: {
+    required: ['api_key', 'api_secret'],
+  },
+  KotakNeo: {
+    required: ['api_key', 'client_id', 'mpin', 'totp', 'mobile_number'],
+  },
+};
+
+// Helper function to check if a field should be shown for a platform
+const shouldShowField = (platform: string | null, fieldName: string): boolean => {
+  if (!platform) return false;
+  const config = PLATFORM_CONFIG[platform];
+  if (!config) return true; // Show all fields if platform not in config
+  return config.required.includes(fieldName) || (config.optional?.includes(fieldName) ?? false);
+};
+
+// Helper function to check if a field is required for a platform
+const isFieldRequired = (platform: string | null, fieldName: string): boolean => {
+  if (!platform) return false;
+  const config = PLATFORM_CONFIG[platform];
+  if (!config) return false;
+  return config.required.includes(fieldName);
+};
 
 export function MyKeysPage() {
   const { accessToken, user } = useAuth();
@@ -51,6 +87,12 @@ export function MyKeysPage() {
   const [form, setForm] = useState<BrokerForm | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  
+  // TOTP Update Dialog state
+  const [totpDialogOpen, setTotpDialogOpen] = useState(false);
+  const [currentBrokerForTotp, setCurrentBrokerForTotp] = useState<BrokerRow | null>(null);
+  const [newTotp, setNewTotp] = useState('');
+  const [isUpdatingTotp, setIsUpdatingTotp] = useState(false);
 
   const supabase = useMemo(() => {
     return createClient(
@@ -125,6 +167,7 @@ export function MyKeysPage() {
       mpin: null,
       totp: null,
       notes: null,
+      mobile_number: null,
     });
     setDialogOpen(true);
   };
@@ -142,6 +185,7 @@ export function MyKeysPage() {
       mpin: broker.mpin,
       totp: broker.totp,
       notes: broker.notes,
+      mobile_number: broker.mobile_number,
     });
     setDialogOpen(true);
   };
@@ -155,9 +199,27 @@ export function MyKeysPage() {
 
   const saveBroker = async () => {
     if (!form || !user?.id) return;
-    if (!form.name || !form.platform || !form.api_key) {
-      toast.error('Name, Platform, and API Key are required');
+    
+    // Validate name and platform
+    if (!form.name || !form.platform) {
+      toast.error('Name and Platform are required');
       return;
+    }
+
+    // Validate required fields based on platform
+    const config = PLATFORM_CONFIG[form.platform];
+    if (config) {
+      const missingFields: string[] = [];
+      for (const field of config.required) {
+        const value = form[field as keyof BrokerForm];
+        if (!value || (typeof value === 'string' && value.trim() === '')) {
+          missingFields.push(field);
+        }
+      }
+      if (missingFields.length > 0) {
+        toast.error(`Missing required fields: ${missingFields.join(', ')}`);
+        return;
+      }
     }
     setIsSaving(true);
     try {
@@ -172,6 +234,7 @@ export function MyKeysPage() {
         mpin: form.mpin,
         totp: form.totp,
         notes: form.notes,
+        mobile_number: form.mobile_number || null,
         updated_at: new Date().toISOString(),
       };
 
@@ -214,8 +277,45 @@ export function MyKeysPage() {
   
     window.location.href = loginUrl;
   };
-  
-  
+
+  const openTotpUpdateDialog = (broker: BrokerRow) => {
+    setCurrentBrokerForTotp(broker);
+    setNewTotp(broker.totp || '');
+    setTotpDialogOpen(true);
+  };
+
+  const updateTotp = async () => {
+    if (!currentBrokerForTotp || !user?.id) return;
+    if (!newTotp || newTotp.trim() === '') {
+      toast.error('Please enter a TOTP');
+      return;
+    }
+
+    setIsUpdatingTotp(true);
+    try {
+      const { error } = await supabase
+        .from('user_brokers')
+        .update({
+          totp: newTotp.trim(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', currentBrokerForTotp.id)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      toast.success('TOTP updated successfully');
+      setTotpDialogOpen(false);
+      setCurrentBrokerForTotp(null);
+      setNewTotp('');
+      await fetchBrokers();
+    } catch (err: any) {
+      console.error('TOTP update failed:', err);
+      toast.error(err?.message || 'Failed to update TOTP');
+    } finally {
+      setIsUpdatingTotp(false);
+    }
+  };
 
   const deleteBroker = async (broker: BrokerRow) => {
     if (!user?.id) return;
@@ -302,6 +402,15 @@ export function MyKeysPage() {
                         Daily Login
                       </Button>
                     )}
+                    {broker.platform === 'KotakNeo' && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openTotpUpdateDialog(broker)}
+                      >
+                        Update TOTP
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"
@@ -353,7 +462,7 @@ export function MyKeysPage() {
             </div>
             <Dialog.Description className="DialogDescription text-sm text-slate-600 mb-6">
               {editingId === null 
-                ? 'Enter broker details below. Name, Platform, and API Key are required.' 
+                ? 'Select a platform first, then fill in the required fields for that platform.' 
                 : 'Edit broker details and click Save to update.'}
             </Dialog.Description>
 
@@ -378,7 +487,39 @@ export function MyKeysPage() {
                   </label>
                   <Select
                     value={form?.platform || ''}
-                    onValueChange={(value) => updateForm('platform', value)}
+                    onValueChange={(value) => {
+                      // Update platform first
+                      updateForm('platform', value);
+                      
+                      // If platform changed, clear fields that are not relevant to the new platform
+                      if (form?.platform && form.platform !== value) {
+                        const newConfig = PLATFORM_CONFIG[value];
+                        const fieldsToKeep = new Set([
+                          'name',
+                          'platform',
+                          'notes',
+                          'api_key',
+                          ...(newConfig?.required || []),
+                          ...(newConfig?.optional || []),
+                        ]);
+                        
+                        // Clear fields that are not needed for the new platform
+                        const fieldsToClear: (keyof BrokerForm)[] = [
+                          'api_secret',
+                          'auth_token',
+                          'client_id',
+                          'mpin',
+                          'totp',
+                          'mobile_number',
+                        ] as (keyof BrokerForm)[];
+                        
+                        fieldsToClear.forEach((field) => {
+                          if (!fieldsToKeep.has(field)) {
+                            updateForm(field, null);
+                          }
+                        });
+                      }
+                    }}
                   >
                     <SelectTrigger id="broker-platform" className="w-full">
                       <SelectValue placeholder="Select a platform" />
@@ -387,92 +528,153 @@ export function MyKeysPage() {
                       <SelectItem value="Angelone">Angelone</SelectItem>
                       <SelectItem value="Zerodha">Zerodha</SelectItem>
                       <SelectItem value="Groww">Groww</SelectItem>
+                      <SelectItem value="KotakNeo">KotakNeo</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="flex flex-col md:col-span-2">
-                  <label htmlFor="broker-api-key" className="text-sm font-medium text-slate-700 mb-1.5">
-                    API Key <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    id="broker-api-key"
-                    value={form?.api_key ?? ''}
-                    onChange={(e) => updateForm('api_key', e.target.value)}
-                    placeholder="Enter API Key"
-                    className="w-full"
-                  />
-                </div>
+                {/* Show message if no platform selected */}
+                {!form?.platform && (
+                  <div className="flex flex-col md:col-span-2">
+                    <p className="text-sm text-slate-500 italic">
+                      Please select a platform to see the required fields.
+                    </p>
+                  </div>
+                )}
 
-                <div className="flex flex-col">
-                  <label htmlFor="broker-api-secret" className="text-sm font-medium text-slate-700 mb-1.5">
-                    API Secret
-                  </label>
-                  <Input
-                    id="broker-api-secret"
-                    type="password"
-                    value={form?.api_secret ?? ''}
-                    onChange={(e) => updateForm('api_secret', e.target.value || null)}
-                    placeholder="Enter API Secret"
-                    className="w-full"
-                  />
-                </div>
+                {/* API Key - Shown when platform is selected, always required */}
+                {form?.platform && shouldShowField(form.platform, 'api_key') && (
+                  <div className="flex flex-col md:col-span-2">
+                    <label htmlFor="broker-api-key" className="text-sm font-medium text-slate-700 mb-1.5">
+                      API Key <span className="text-red-500">*</span>
+                    </label>
+                    <Input
+                      id="broker-api-key"
+                      value={form?.api_key ?? ''}
+                      onChange={(e) => updateForm('api_key', e.target.value)}
+                      placeholder="Enter API Key"
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-                <div className="flex flex-col">
-                  <label htmlFor="broker-auth-token" className="text-sm font-medium text-slate-700 mb-1.5">
-                    Auth Token
-                  </label>
-                  <Input
-                    id="broker-auth-token"
-                    type="password"
-                    value={form?.auth_token ?? ''}
-                    onChange={(e) => updateForm('auth_token', e.target.value || null)}
-                    placeholder="Enter Auth Token"
-                    className="w-full"
-                  />
-                </div>
+                {/* API Secret - Shown for Zerodha and Groww */}
+                {shouldShowField(form?.platform || null, 'api_secret') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-api-secret" className="text-sm font-medium text-slate-700 mb-1.5">
+                      API Secret {isFieldRequired(form?.platform || null, 'api_secret') && <span className="text-red-500">*</span>}
+                    </label>
+                    <Input
+                      id="broker-api-secret"
+                      type="password"
+                      value={form?.api_secret ?? ''}
+                      onChange={(e) => updateForm('api_secret', e.target.value || null)}
+                      placeholder="Enter API Secret"
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-                <div className="flex flex-col">
-                  <label htmlFor="broker-client-id" className="text-sm font-medium text-slate-700 mb-1.5">
-                    Client ID
-                  </label>
-                  <Input
-                    id="broker-client-id"
-                    type="password"
-                    value={form?.client_id ?? ''}
-                    onChange={(e) => updateForm('client_id', e.target.value || null)}
-                    placeholder="Enter Client ID"
-                    className="w-full"
-                  />
-                </div>
+                {/* Client ID - Shown for Angelone and KotakNeo */}
+                {shouldShowField(form?.platform || null, 'client_id') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-client-id" className="text-sm font-medium text-slate-700 mb-1.5">
+                      Client ID {isFieldRequired(form?.platform || null, 'client_id') && <span className="text-red-500">*</span>}
+                    </label>
+                    <Input
+                      id="broker-client-id"
+                      type="password"
+                      value={form?.client_id ?? ''}
+                      onChange={(e) => updateForm('client_id', e.target.value || null)}
+                      placeholder="Enter Client ID"
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-                <div className="flex flex-col">
-                  <label htmlFor="broker-mpin" className="text-sm font-medium text-slate-700 mb-1.5">
-                    MPIN
-                  </label>
-                  <Input
-                    id="broker-mpin"
-                    type="password"
-                    value={form?.mpin ?? ''}
-                    onChange={(e) => updateForm('mpin', e.target.value || null)}
-                    placeholder="Enter MPIN"
-                    className="w-full"
-                  />
-                </div>
+                {/* MPIN - Shown for Angelone and KotakNeo */}
+                {shouldShowField(form?.platform || null, 'mpin') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-mpin" className="text-sm font-medium text-slate-700 mb-1.5">
+                      MPIN {isFieldRequired(form?.platform || null, 'mpin') && <span className="text-red-500">*</span>}
+                    </label>
+                    <Input
+                      id="broker-mpin"
+                      type="password"
+                      value={form?.mpin ?? ''}
+                      onChange={(e) => updateForm('mpin', e.target.value || null)}
+                      placeholder="Enter MPIN"
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
-                <div className="flex flex-col">
-                  <label htmlFor="broker-totp" className="text-sm font-medium text-slate-700 mb-1.5">
-                    TOTP
-                  </label>
-                  <Input
-                    id="broker-totp"
-                    type="password"
-                    value={form?.totp ?? ''}
-                    onChange={(e) => updateForm('totp', e.target.value || null)}
-                    placeholder="Enter TOTP"
-                    className="w-full"
-                  />
-                </div>
+                {/* TOTP - Shown for Angelone and KotakNeo */}
+                {shouldShowField(form?.platform || null, 'totp') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-totp" className="text-sm font-medium text-slate-700 mb-1.5">
+                      TOTP {isFieldRequired(form?.platform || null, 'totp') && <span className="text-red-500">*</span>}
+                    </label>
+                    <Input
+                      id="broker-totp"
+                      type="password"
+                      value={form?.totp ?? ''}
+                      onChange={(e) => updateForm('totp', e.target.value || null)}
+                      placeholder="Enter TOTP"
+                      className="w-full"
+                    />
+                  </div>
+                )}
+
+                {/* Mobile Number - Shown for KotakNeo */}
+                {shouldShowField(form?.platform || null, 'mobile_number') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-mobile-number" className="text-sm font-medium text-slate-700 mb-1.5">
+                      Mobile Number {isFieldRequired(form?.platform || null, 'mobile_number') && <span className="text-red-500">*</span>}
+                    </label>
+                    <div className="flex items-center border border-slate-300 rounded-md overflow-hidden focus-within:ring-2 focus-within:ring-slate-900 focus-within:border-slate-900">
+                      <div className="px-3 py-2 bg-slate-100 border-r border-slate-300 text-slate-700 font-medium">
+                        +91
+                      </div>
+                      <Input
+                        id="broker-mobile-number"
+                        type="tel"
+                        value={form?.mobile_number 
+                          ? (form.mobile_number.startsWith('+91') 
+                              ? form.mobile_number.slice(3) 
+                              : form.mobile_number.replace(/^\+91/, ''))
+                          : ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow digits, max 10 characters
+                          const cleanedValue = value.replace(/\D/g, '').slice(0, 10);
+                          // Always prepend +91 when saving
+                          updateForm('mobile_number', cleanedValue ? `+91${cleanedValue}` : null);
+                        }}
+                        placeholder="XXXXXXXXXX"
+                        className="w-full border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                        maxLength={10}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Auth Token - Optional field, shown when platform is selected but not in required list */}
+                {form?.platform && !shouldShowField(form.platform, 'api_secret') && !shouldShowField(form.platform, 'client_id') && (
+                  <div className="flex flex-col">
+                    <label htmlFor="broker-auth-token" className="text-sm font-medium text-slate-700 mb-1.5">
+                      Auth Token
+                    </label>
+                    <Input
+                      id="broker-auth-token"
+                      type="password"
+                      value={form?.auth_token ?? ''}
+                      onChange={(e) => updateForm('auth_token', e.target.value || null)}
+                      placeholder="Enter Auth Token"
+                      className="w-full"
+                    />
+                  </div>
+                )}
 
                 <div className="flex flex-col md:col-span-2">
                   <label htmlFor="broker-notes" className="text-sm font-medium text-slate-700 mb-1.5">
@@ -508,6 +710,75 @@ export function MyKeysPage() {
                 disabled={isSaving}
               >
                 {isSaving ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      {/* TOTP Update Dialog */}
+      <Dialog.Root open={totpDialogOpen} onOpenChange={(o) => {
+        setTotpDialogOpen(o);
+        if (!o) {
+          setCurrentBrokerForTotp(null);
+          setNewTotp('');
+        }
+      }}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="DialogOverlay" />
+          <Dialog.Content className="DialogContent">
+            <div className="flex items-center justify-between mb-4">
+              <Dialog.Title className="DialogTitle text-xl font-semibold text-slate-900">
+                Update TOTP
+              </Dialog.Title>
+              <Dialog.Close asChild>
+                <button
+                  className="IconButton rounded-full p-1 hover:bg-slate-100 transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5 text-slate-500" />
+                </button>
+              </Dialog.Close>
+            </div>
+            <Dialog.Description className="DialogDescription text-sm text-slate-600 mb-6">
+              Update TOTP for "{currentBrokerForTotp?.name}" ({currentBrokerForTotp?.platform}).
+            </Dialog.Description>
+
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <label htmlFor="totp-input" className="text-sm font-medium text-slate-700 mb-1.5">
+                  New TOTP <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  id="totp-input"
+                  type="password"
+                  value={newTotp}
+                  onChange={(e) => setNewTotp(e.target.value)}
+                  placeholder="Enter new TOTP"
+                  className="w-full"
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-slate-200">
+              <Dialog.Close asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setTotpDialogOpen(false);
+                  }}
+                >
+                  Cancel
+                </Button>
+              </Dialog.Close>
+              <Button
+                onClick={async () => {
+                  await updateTotp();
+                }}
+                disabled={isUpdatingTotp || !newTotp.trim()}
+              >
+                {isUpdatingTotp ? 'Updating...' : 'Update TOTP'}
               </Button>
             </div>
           </Dialog.Content>
