@@ -13,9 +13,10 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
-import { Briefcase, Edit3, Trash2, X, RefreshCw, FileText, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle, Rocket } from 'lucide-react';
+import { Briefcase, Edit3, Trash2, X, RefreshCw, BarChart3, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle, Rocket } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import './global.css';
 
 type Nullable<T> = T | null;
@@ -66,17 +67,15 @@ interface EditForm {
   dry_run: boolean;
 }
 
-interface LogEvent {
-  timestamp: number;
-  ingestionTime: number;
-  message: string;
-}
-
-interface LogsResponse {
-  events: LogEvent[];
-  nextForwardToken?: string;
-  nextBackwardToken?: string;
-  lastTimestamp?: number;
+interface StrategyTrade {
+  id: number;
+  user: string | null;
+  stock_option: string | null;
+  position: string | null;
+  price: number | null;
+  date_time: string | null;
+  strategy: string | null;
+  qty: number | null;
 }
 
 export function PortfolioPage() {
@@ -98,12 +97,12 @@ export function PortfolioPage() {
   const [isRestartingStrategy, setIsRestartingStrategy] = useState<string | null>(null);
   const [isRedeploying, setIsRedeploying] = useState<string | null>(null);
   
-  // Logs state
-  const [expandedLogsId, setExpandedLogsId] = useState<string | null>(null);
-  const [logs, setLogs] = useState<Record<string, LogEvent[]>>({});
-  const [isLoadingLogs, setIsLoadingLogs] = useState<Record<string, boolean>>({});
-  const [logsCurrentPage, setLogsCurrentPage] = useState<Record<string, number>>({});
-  const logsPerPage = 15;
+  // Trades state
+  const [expandedTradesId, setExpandedTradesId] = useState<string | null>(null);
+  const [trades, setTrades] = useState<Record<string, StrategyTrade[]>>({});
+  const [isLoadingTrades, setIsLoadingTrades] = useState<Record<string, boolean>>({});
+  const [tradesCurrentPage, setTradesCurrentPage] = useState<Record<string, number>>({});
+  const tradesPerPage = 15;
 
   const supabase = useMemo(() => {
     return createClient(
@@ -495,89 +494,68 @@ export function PortfolioPage() {
     }
   };
 
-  const fetchLogs = async (strategy: UserStrategyDisplay) => {
-    if (!strategy.task_arn) {
-      toast.error('Task ARN not found for this strategy');
+  const fetchTrades = async (strategy: UserStrategyDisplay) => {
+    if (!user?.id) {
+      toast.error('User not authenticated');
       return;
     }
 
-    // Extract task ID from task_arn (last part after the last '/')
-    // Example: arn:aws:ecs:ap-southeast-2:382173471518:task/nifty-cluster/f766b898d2434e39868f1fbade9e10fa
-    // Result: f766b898d2434e39868f1fbade9e10fa
-    const taskId = strategy.task_arn.split('/').pop();
-    if (!taskId) {
-      toast.error('Invalid task ARN format');
-      return;
-    }
-
-    setIsLoadingLogs(prev => ({ ...prev, [strategy.id]: true }));
+    setIsLoadingTrades(prev => ({ ...prev, [strategy.id]: true }));
     try {
-      const params = new URLSearchParams({
-        logGroup: '/ecs/nifty-strat',
-        logStreamName: `ecs/nifty-strat-container/${taskId}`,
-        startFromHead: 'false',
-        limit: '200',
-      });
+      const { data, error } = await supabase
+        .from('trades')
+        .select('id, user, stock_option, position, price, date_time, strategy, qty')
+        .eq('user', user.id)
+        .eq('strategy', strategy.strategy_id)
+        .order('date_time', { ascending: false })
+        .limit(200);
 
-      const response = await fetch(
-        `https://56hbfxct5bej6jcm7phngpe7yq0mqzon.lambda-url.ap-southeast-2.on.aws/?${params.toString()}`,
-        {
-          method: 'GET',
-        }
-      );
+      if (error) throw error;
 
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unable to read error response');
-        throw new Error(`Failed to fetch logs: ${response.status} ${response.statusText} - ${errorText}`);
-      }
-
-      const data: LogsResponse = await response.json();
-      setLogs(prev => ({ ...prev, [strategy.id]: data.events || [] }));
-      // Reset to page 1 when logs are fetched
-      setLogsCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
+      const tradeList = (data ?? []) as StrategyTrade[];
+      setTrades(prev => ({ ...prev, [strategy.id]: tradeList }));
+      setTradesCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
     } catch (error: any) {
-      console.error('Failed to fetch logs:', error);
-      toast.error(error?.message || 'Failed to fetch logs');
-      setLogs(prev => ({ ...prev, [strategy.id]: [] }));
+      console.error('Failed to fetch trades:', error);
+      toast.error(error?.message || 'Failed to fetch trades');
+      setTrades(prev => ({ ...prev, [strategy.id]: [] }));
     } finally {
-      setIsLoadingLogs(prev => ({ ...prev, [strategy.id]: false }));
+      setIsLoadingTrades(prev => ({ ...prev, [strategy.id]: false }));
     }
   };
 
-  const toggleLogs = async (strategy: UserStrategyDisplay) => {
-    if (expandedLogsId === strategy.id) {
-      // Collapse
-      setExpandedLogsId(null);
+  const toggleTrades = async (strategy: UserStrategyDisplay) => {
+    if (expandedTradesId === strategy.id) {
+      setExpandedTradesId(null);
     } else {
-      // Expand and fetch logs if not already loaded
-      setExpandedLogsId(strategy.id);
-      if (!logs[strategy.id]) {
-        await fetchLogs(strategy);
+      setExpandedTradesId(strategy.id);
+      if (!trades[strategy.id]) {
+        await fetchTrades(strategy);
       }
-      // Reset to page 1 when expanding
-      setLogsCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
+      setTradesCurrentPage(prev => ({ ...prev, [strategy.id]: 1 }));
     }
   };
 
-  const setLogsPage = (strategyId: string, page: number) => {
-    setLogsCurrentPage(prev => ({ ...prev, [strategyId]: page }));
+  const setTradesPage = (strategyId: string, page: number) => {
+    setTradesCurrentPage(prev => ({ ...prev, [strategyId]: page }));
   };
 
-  const getPaginatedLogs = (strategyId: string) => {
-    const strategyLogs = logs[strategyId] || [];
-    const currentPage = logsCurrentPage[strategyId] || 1;
-    const startIndex = (currentPage - 1) * logsPerPage;
-    const endIndex = startIndex + logsPerPage;
-    return strategyLogs.slice(startIndex, endIndex);
+  const getPaginatedTrades = (strategyId: string) => {
+    const strategyTrades = trades[strategyId] || [];
+    const currentPage = tradesCurrentPage[strategyId] || 1;
+    const startIndex = (currentPage - 1) * tradesPerPage;
+    const endIndex = startIndex + tradesPerPage;
+    return strategyTrades.slice(startIndex, endIndex);
   };
 
-  const getLogsTotalPages = (strategyId: string) => {
-    const strategyLogs = logs[strategyId] || [];
-    return Math.ceil(strategyLogs.length / logsPerPage);
+  const getTradesTotalPages = (strategyId: string) => {
+    const strategyTrades = trades[strategyId] || [];
+    return Math.ceil(strategyTrades.length / tradesPerPage);
   };
 
-  const formatTimestamp = (timestamp: number) => {
-    const date = new Date(timestamp);
+  const formatDateTime = (dateTime: string | null) => {
+    if (!dateTime) return '—';
+    const date = new Date(dateTime);
     return date.toLocaleString('en-US', {
       year: 'numeric',
       month: '2-digit',
@@ -667,22 +645,22 @@ export function PortfolioPage() {
             max-width: 100% !important;
           }
           
-          /* Logs section adjustments */
-          .portfolio-logs-container {
+          /* Trades section adjustments */
+          .portfolio-trades-container {
             font-size: 0.7rem !important;
           }
           
-          .portfolio-logs-pagination {
+          .portfolio-trades-pagination {
             flex-direction: column !important;
             gap: 0.75rem !important;
             align-items: stretch !important;
           }
           
-          .portfolio-logs-pagination > div:first-child {
+          .portfolio-trades-pagination > div:first-child {
             text-align: center !important;
           }
           
-          .portfolio-logs-pagination > div:last-child {
+          .portfolio-trades-pagination > div:last-child {
             justify-content: center !important;
             flex-wrap: wrap !important;
           }
@@ -727,19 +705,18 @@ export function PortfolioPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => toggleLogs(strategy)}
-                        disabled={!strategy.task_arn}
+                        onClick={() => toggleTrades(strategy)}
                       >
-                        <FileText className="mr-2 h-4 w-4" />
-                        {expandedLogsId === strategy.id ? (
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        {expandedTradesId === strategy.id ? (
                           <>
                             <ChevronUp className="mr-1 h-3 w-3" />
-                            Hide Logs
+                            Hide Trades
                           </>
                         ) : (
                           <>
                             <ChevronDown className="mr-1 h-3 w-3" />
-                            View Logs
+                            Show Trades
                           </>
                         )}
                       </Button>
@@ -849,74 +826,85 @@ export function PortfolioPage() {
                     </div>
                   </div>
 
-                  {/* Logs section - expandable */}
-                  {expandedLogsId === strategy.id && (
+                  {/* Trades section - expandable */}
+                  {expandedTradesId === strategy.id && (
                     <div className="mt-4 pt-4 border-t border-slate-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-semibold text-slate-900">Python Logs</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">Trades</h3>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => fetchLogs(strategy)}
-                          disabled={isLoadingLogs[strategy.id]}
+                          onClick={() => fetchTrades(strategy)}
+                          disabled={isLoadingTrades[strategy.id]}
                           className="h-7"
                         >
-                          <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingLogs[strategy.id] ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingTrades[strategy.id] ? 'animate-spin' : ''}`} />
                           Refresh
                         </Button>
                       </div>
-                      {isLoadingLogs[strategy.id] ? (
+                      {isLoadingTrades[strategy.id] ? (
                         <div className="text-center py-8 text-slate-500 text-sm">
-                          Loading logs...
+                          Loading trades...
                         </div>
-                      ) : logs[strategy.id] && logs[strategy.id].length > 0 ? (
+                      ) : trades[strategy.id] && trades[strategy.id].length > 0 ? (
                         <>
-                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs portfolio-logs-container">
-                            <div className="space-y-1">
-                              {getPaginatedLogs(strategy.id).map((event, index) => {
-                                const globalIndex = ((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + index;
-                                return (
-                                  <div key={globalIndex} className="text-slate-700">
-                                    <span className="text-slate-500 mr-2">
-                                      [{formatTimestamp(event.timestamp)}]
-                                    </span>
-                                    <span className="text-slate-900">{event.message}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Security</TableHead>
+                                  <TableHead>Trade Type</TableHead>
+                                  <TableHead>Price</TableHead>
+                                  <TableHead>Date/Time</TableHead>
+                                  <TableHead>Qty</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {getPaginatedTrades(strategy.id).map((trade) => (
+                                  <TableRow key={trade.id}>
+                                    <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                                    <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                                    <TableCell>
+                                      {trade.price != null ? `$${trade.price.toFixed(2)}` : '—'}
+                                    </TableCell>
+                                    <TableCell>{formatDateTime(trade.date_time)}</TableCell>
+                                    <TableCell>{trade.qty ?? '—'}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
-                          {getLogsTotalPages(strategy.id) > 1 && (
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 portfolio-logs-pagination">
+                          {getTradesTotalPages(strategy.id) > 1 && (
+                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 portfolio-trades-pagination">
                               <div className="text-xs text-slate-600">
-                                Showing {((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + 1} to {Math.min((logsCurrentPage[strategy.id] || 1) * logsPerPage, logs[strategy.id].length)} of {logs[strategy.id].length} log entries
+                                Showing {((tradesCurrentPage[strategy.id] || 1) - 1) * tradesPerPage + 1} to {Math.min((tradesCurrentPage[strategy.id] || 1) * tradesPerPage, trades[strategy.id].length)} of {trades[strategy.id].length} trades
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const currentPage = logsCurrentPage[strategy.id] || 1;
-                                    setLogsPage(strategy.id, Math.max(1, currentPage - 1));
+                                    const currentPage = tradesCurrentPage[strategy.id] || 1;
+                                    setTradesPage(strategy.id, Math.max(1, currentPage - 1));
                                   }}
-                                  disabled={(logsCurrentPage[strategy.id] || 1) === 1}
+                                  disabled={(tradesCurrentPage[strategy.id] || 1) === 1}
                                   className="h-7 text-xs"
                                 >
                                   <ChevronLeft className="h-3 w-3" />
                                   Previous
                                 </Button>
                                 <div className="text-xs text-slate-600">
-                                  Page {logsCurrentPage[strategy.id] || 1} of {getLogsTotalPages(strategy.id)}
+                                  Page {tradesCurrentPage[strategy.id] || 1} of {getTradesTotalPages(strategy.id)}
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const currentPage = logsCurrentPage[strategy.id] || 1;
-                                    const totalPages = getLogsTotalPages(strategy.id);
-                                    setLogsPage(strategy.id, Math.min(totalPages, currentPage + 1));
+                                    const currentPage = tradesCurrentPage[strategy.id] || 1;
+                                    const totalPages = getTradesTotalPages(strategy.id);
+                                    setTradesPage(strategy.id, Math.min(totalPages, currentPage + 1));
                                   }}
-                                  disabled={(logsCurrentPage[strategy.id] || 1) >= getLogsTotalPages(strategy.id)}
+                                  disabled={(tradesCurrentPage[strategy.id] || 1) >= getTradesTotalPages(strategy.id)}
                                   className="h-7 text-xs"
                                 >
                                   Next
@@ -928,7 +916,7 @@ export function PortfolioPage() {
                         </>
                       ) : (
                         <div className="text-center py-8 text-slate-500 text-sm">
-                          No logs available
+                          No trades found
                         </div>
                       )}
                     </div>
@@ -959,7 +947,7 @@ export function PortfolioPage() {
                   key={strategy.id}
                   className="border border-red-200 rounded-lg p-4 bg-red-50/50 hover:bg-red-50 transition-colors portfolio-strategy-card"
                 >
-                  {/* First line: Strategy Name (bold) with View Logs, Edit, Re-deploy and Delete buttons right-aligned */}
+                  {/* First line: Strategy Name (bold) with Show Trades, Edit, Re-deploy and Delete buttons right-aligned */}
                   <div className="flex items-center justify-between mb-3 portfolio-strategy-header">
                     <div className="text-xl font-bold text-slate-900 portfolio-strategy-title">
                       {strategy.strategy_name || 'Unknown'}
@@ -968,19 +956,18 @@ export function PortfolioPage() {
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => toggleLogs(strategy)}
-                        disabled={!strategy.task_arn}
+                        onClick={() => toggleTrades(strategy)}
                       >
-                        <FileText className="mr-2 h-4 w-4" />
-                        {expandedLogsId === strategy.id ? (
+                        <BarChart3 className="mr-2 h-4 w-4" />
+                        {expandedTradesId === strategy.id ? (
                           <>
                             <ChevronUp className="mr-1 h-3 w-3" />
-                            Hide Logs
+                            Hide Trades
                           </>
                         ) : (
                           <>
                             <ChevronDown className="mr-1 h-3 w-3" />
-                            View Logs
+                            Show Trades
                           </>
                         )}
                       </Button>
@@ -1067,74 +1054,85 @@ export function PortfolioPage() {
                     </div>
                   )}
 
-                  {/* Logs section - expandable */}
-                  {expandedLogsId === strategy.id && (
+                  {/* Trades section - expandable */}
+                  {expandedTradesId === strategy.id && (
                     <div className="mt-4 pt-4 border-t border-slate-200">
                       <div className="flex items-center justify-between mb-3">
-                        <h3 className="text-sm font-semibold text-slate-900">Python Logs</h3>
+                        <h3 className="text-sm font-semibold text-slate-900">Trades</h3>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => fetchLogs(strategy)}
-                          disabled={isLoadingLogs[strategy.id]}
+                          onClick={() => fetchTrades(strategy)}
+                          disabled={isLoadingTrades[strategy.id]}
                           className="h-7"
                         >
-                          <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingLogs[strategy.id] ? 'animate-spin' : ''}`} />
+                          <RefreshCw className={`h-3 w-3 mr-1 ${isLoadingTrades[strategy.id] ? 'animate-spin' : ''}`} />
                           Refresh
                         </Button>
                       </div>
-                      {isLoadingLogs[strategy.id] ? (
+                      {isLoadingTrades[strategy.id] ? (
                         <div className="text-center py-8 text-slate-500 text-sm">
-                          Loading logs...
+                          Loading trades...
                         </div>
-                      ) : logs[strategy.id] && logs[strategy.id].length > 0 ? (
+                      ) : trades[strategy.id] && trades[strategy.id].length > 0 ? (
                         <>
-                          <div className="bg-white border border-slate-200 rounded-lg p-4 font-mono text-xs">
-                            <div className="space-y-1">
-                              {getPaginatedLogs(strategy.id).map((event, index) => {
-                                const globalIndex = ((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + index;
-                                return (
-                                  <div key={globalIndex} className="text-slate-700">
-                                    <span className="text-slate-500 mr-2">
-                                      [{formatTimestamp(event.timestamp)}]
-                                    </span>
-                                    <span className="text-slate-900">{event.message}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
+                          <div className="bg-white border border-slate-200 rounded-lg overflow-hidden">
+                            <Table>
+                              <TableHeader>
+                                <TableRow>
+                                  <TableHead>Security</TableHead>
+                                  <TableHead>Trade Type</TableHead>
+                                  <TableHead>Price</TableHead>
+                                  <TableHead>Date/Time</TableHead>
+                                  <TableHead>Qty</TableHead>
+                                </TableRow>
+                              </TableHeader>
+                              <TableBody>
+                                {getPaginatedTrades(strategy.id).map((trade) => (
+                                  <TableRow key={trade.id}>
+                                    <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                                    <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                                    <TableCell>
+                                      {trade.price != null ? `$${trade.price.toFixed(2)}` : '—'}
+                                    </TableCell>
+                                    <TableCell>{formatDateTime(trade.date_time)}</TableCell>
+                                    <TableCell>{trade.qty ?? '—'}</TableCell>
+                                  </TableRow>
+                                ))}
+                              </TableBody>
+                            </Table>
                           </div>
-                          {getLogsTotalPages(strategy.id) > 1 && (
+                          {getTradesTotalPages(strategy.id) > 1 && (
                             <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
                               <div className="text-xs text-slate-600">
-                                Showing {((logsCurrentPage[strategy.id] || 1) - 1) * logsPerPage + 1} to {Math.min((logsCurrentPage[strategy.id] || 1) * logsPerPage, logs[strategy.id].length)} of {logs[strategy.id].length} log entries
+                                Showing {((tradesCurrentPage[strategy.id] || 1) - 1) * tradesPerPage + 1} to {Math.min((tradesCurrentPage[strategy.id] || 1) * tradesPerPage, trades[strategy.id].length)} of {trades[strategy.id].length} trades
                               </div>
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const currentPage = logsCurrentPage[strategy.id] || 1;
-                                    setLogsPage(strategy.id, Math.max(1, currentPage - 1));
+                                    const currentPage = tradesCurrentPage[strategy.id] || 1;
+                                    setTradesPage(strategy.id, Math.max(1, currentPage - 1));
                                   }}
-                                  disabled={(logsCurrentPage[strategy.id] || 1) === 1}
+                                  disabled={(tradesCurrentPage[strategy.id] || 1) === 1}
                                   className="h-7 text-xs"
                                 >
                                   <ChevronLeft className="h-3 w-3" />
                                   Previous
                                 </Button>
                                 <div className="text-xs text-slate-600">
-                                  Page {logsCurrentPage[strategy.id] || 1} of {getLogsTotalPages(strategy.id)}
+                                  Page {tradesCurrentPage[strategy.id] || 1} of {getTradesTotalPages(strategy.id)}
                                 </div>
                                 <Button
                                   variant="outline"
                                   size="sm"
                                   onClick={() => {
-                                    const currentPage = logsCurrentPage[strategy.id] || 1;
-                                    const totalPages = getLogsTotalPages(strategy.id);
-                                    setLogsPage(strategy.id, Math.min(totalPages, currentPage + 1));
+                                    const currentPage = tradesCurrentPage[strategy.id] || 1;
+                                    const totalPages = getTradesTotalPages(strategy.id);
+                                    setTradesPage(strategy.id, Math.min(totalPages, currentPage + 1));
                                   }}
-                                  disabled={(logsCurrentPage[strategy.id] || 1) >= getLogsTotalPages(strategy.id)}
+                                  disabled={(tradesCurrentPage[strategy.id] || 1) >= getTradesTotalPages(strategy.id)}
                                   className="h-7 text-xs"
                                 >
                                   Next
@@ -1146,7 +1144,7 @@ export function PortfolioPage() {
                         </>
                       ) : (
                         <div className="text-center py-8 text-slate-500 text-sm">
-                          No logs available
+                          No trades found
                         </div>
                       )}
                     </div>

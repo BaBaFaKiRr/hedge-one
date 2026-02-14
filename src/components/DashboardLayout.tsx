@@ -10,11 +10,11 @@ import {
   DropdownMenuTrigger,
 } from './ui/dropdown-menu';
 import { Button } from './ui/button';
-import { LayoutDashboard, Key, LogOut, Menu, X, MessageSquare, Zap, Briefcase } from 'lucide-react';
+import { LayoutDashboard, Key, LogOut, Menu, X, MessageSquare, Zap, Briefcase, BarChart3 } from 'lucide-react';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
-type BasePage = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio';
+type BasePage = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'tradebook';
 type ExtendedPage = BasePage | 'strategy-detail';
 
 interface DashboardLayoutProps {
@@ -49,6 +49,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
     { id: 'home' as const, label: 'Dashboard', icon: LayoutDashboard },
     { id: 'strategies' as const, label: 'Strategies', icon: Zap },
     { id: 'portfolio' as const, label: 'Portfolio', icon: Briefcase },
+    { id: 'tradebook' as const, label: 'Tradebook', icon: BarChart3 },
     { id: 'mykeys' as const, label: 'My Brokers', icon: Key },
     { id: 'telegram' as const, label: 'Telegram', icon: MessageSquare },
   ];

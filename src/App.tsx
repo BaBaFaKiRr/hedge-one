@@ -9,9 +9,10 @@ import { TelegramPage } from './components/TelegramPage';
 import { StrategiesPage } from './components/StrategiesPage';
 import { StrategyDetailPage } from './components/StrategyDetailPage';
 import { PortfolioPage } from './components/PortfolioPage';
+import { TradebookPage } from './components/TradebookPage';
 import { Toaster } from './components/ui/sonner';
 
-type PageType = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'strategy-detail';
+type PageType = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'tradebook' | 'strategy-detail';
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -74,6 +75,8 @@ function AppContent() {
         );
       case 'portfolio':
         return <PortfolioPage />;
+      case 'tradebook':
+        return <TradebookPage />;
       default:
         return <HomePage />;
     }

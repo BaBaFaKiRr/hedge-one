@@ -150,4 +150,171 @@ app.put("/make-server-4fc01492/api-keys", async (c) => {
   }
 });
 
+// Logs endpoints
+app.get("/make-server-4fc01492/logs/files", async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    
+    if (!accessToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error while fetching log files:', authError);
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    // Get query parameters
+    const userId = c.req.query('user_id') || user.id;
+    // Normalize broker name to lowercase for consistent matching
+    const broker = c.req.query('broker')?.toLowerCase().trim() || null;
+    const sessionId = c.req.query('session_id');
+    const logDate = c.req.query('log_date');
+    const limit = parseInt(c.req.query('limit') || '100', 10);
+
+    // Verify user_id matches authenticated user (security check)
+    if (userId !== user.id) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Build query
+    let query = supabase
+      .from('broker_log_files')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(Math.min(limit, 1000));
+
+    if (broker) {
+      // Fetch all logs first, then filter case-insensitively in memory
+      // This ensures we catch logs regardless of case differences
+      console.log(`Will filter by broker (case-insensitive): ${broker}`);
+    } else {
+      console.log('No broker filter applied - fetching all logs for user');
+    }
+    if (sessionId) {
+      query = query.eq('session_id', sessionId);
+    }
+    if (logDate) {
+      query = query.eq('log_date', logDate);
+    }
+
+    const { data: files, error: queryError } = await query;
+
+    if (queryError) {
+      console.error('Error querying log files:', queryError);
+      return c.json({ error: 'Failed to fetch log files', details: queryError.message }, 500);
+    }
+
+    // Filter by broker case-insensitively if broker parameter provided
+    let filteredFiles = files || [];
+    if (broker && filteredFiles.length > 0) {
+      const brokerLower = broker.toLowerCase();
+      const uniqueBrokers = [...new Set((files || []).map(f => f.broker).filter(Boolean))];
+      console.log(`Available brokers in logs: ${uniqueBrokers.join(', ')}`);
+      console.log(`Searching for broker: ${broker} (normalized: ${brokerLower})`);
+      
+      filteredFiles = filteredFiles.filter(file => 
+        file.broker && file.broker.toLowerCase() === brokerLower
+      );
+      console.log(`After case-insensitive broker filter: ${filteredFiles.length} files (from ${files?.length || 0} total)`);
+    } else if (filteredFiles.length > 0) {
+      const uniqueBrokers = [...new Set(filteredFiles.map(f => f.broker).filter(Boolean))];
+      console.log(`Available brokers in logs (no filter): ${uniqueBrokers.join(', ')}`);
+    }
+
+    console.log(`Found ${filteredFiles.length} log files for user ${userId}${broker ? ` and broker ${broker}` : ''}`);
+
+    // Generate signed URLs for each file
+    const filesWithUrls = await Promise.all(
+      filteredFiles.map(async (file) => {
+        if (file.storage_path) {
+          try {
+            // Generate signed URL (expires in 1 hour)
+            const { data: signedUrlData, error: urlError } = await supabase
+              .storage
+              .from('broker_logs')
+              .createSignedUrl(file.storage_path, 3600);
+
+            if (urlError) {
+              console.error('Error generating signed URL:', urlError);
+              return { ...file, signed_url: null };
+            }
+
+            return { ...file, signed_url: signedUrlData?.signedUrl || null };
+          } catch (error) {
+            console.error('Error generating signed URL:', error);
+            return { ...file, signed_url: null };
+          }
+        }
+        return { ...file, signed_url: null };
+      })
+    );
+
+    return c.json({ files: filesWithUrls });
+  } catch (error) {
+    console.error('Error fetching log files:', error);
+    return c.json({ error: 'Failed to fetch log files' }, 500);
+  }
+});
+
+app.get("/make-server-4fc01492/logs/content", async (c) => {
+  try {
+    const accessToken = c.req.header('Authorization')?.split(' ')[1];
+    
+    if (!accessToken) {
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+    
+    if (authError || !user) {
+      console.error('Auth error while fetching log content:', authError);
+      return c.json({ error: 'Unauthorized' }, 401);
+    }
+
+    const storagePath = c.req.query('storage_path');
+    
+    if (!storagePath) {
+      return c.json({ error: 'storage_path parameter is required' }, 400);
+    }
+
+    // Verify the file belongs to the user (security check)
+    const { data: fileData, error: fileError } = await supabase
+      .from('broker_log_files')
+      .select('user_id')
+      .eq('storage_path', storagePath)
+      .single();
+
+    if (fileError || !fileData) {
+      return c.json({ error: 'Log file not found' }, 404);
+    }
+
+    if (fileData.user_id !== user.id) {
+      return c.json({ error: 'Access denied' }, 403);
+    }
+
+    // Generate signed URL (expires in 1 hour)
+    const { data: signedUrlData, error: urlError } = await supabase
+      .storage
+      .from('broker_logs')
+      .createSignedUrl(storagePath, 3600);
+
+    if (urlError) {
+      console.error('Error generating signed URL:', urlError);
+      return c.json({ error: 'Failed to generate signed URL' }, 500);
+    }
+
+    return c.json({
+      signed_url: signedUrlData?.signedUrl || null,
+      expires_in: 3600
+    });
+  } catch (error) {
+    console.error('Error fetching log content:', error);
+    return c.json({ error: 'Failed to fetch log content' }, 500);
+  }
+});
+
 Deno.serve(app.fetch);
