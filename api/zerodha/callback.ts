@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createClient } from "@supabase/supabase-js";
 
 function getCookie(req: VercelRequest, name: string) {
   const cookie = req.headers.cookie;
@@ -27,30 +26,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).send("Missing broker context");
     }
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-    if (!supabaseUrl || !supabaseKey) {
-      console.error("Missing Supabase environment variables:", {
-        hasUrl: !!supabaseUrl,
-        hasKey: !!supabaseKey,
-      });
+    const nodeBackendUrl = (process.env.NODE_BACKEND_URL || process.env.VITE_NODE_BACKEND_URL || "").replace(/\/$/, "");
+    if (!nodeBackendUrl) {
+      console.error("Missing NODE_BACKEND_URL");
       return res.status(500).send("Server configuration error");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const updateRes = await fetch(`${nodeBackendUrl}/brokers/update`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        broker_id: brokerId,
+        credentials: { auth_token: request_token },
+      }),
+    });
 
-    console.log("Cookie header:", req.headers.cookie);
-
-    const { error } = await supabase
-      .from("user_brokers")
-      .update({
-        auth_token: request_token,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", brokerId);
-
-    if (error) throw error;
+    if (!updateRes.ok) {
+      const errBody = await updateRes.text();
+      console.error("Node backend update failed:", updateRes.status, errBody);
+      throw new Error(errBody || "Broker update failed");
+    }
 
     // Clear cookie
     res.setHeader(

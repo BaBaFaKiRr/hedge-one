@@ -782,6 +782,17 @@ export function PortfolioPage() {
                       <span className="text-sm text-slate-600">Status:</span>
                       {(() => {
                         const status = strategy.last_task_status?.toUpperCase();
+                        const isZerodha = strategy.broker_name?.toLowerCase() === 'zerodha';
+                        const isDailyLoginPending = strategy.last_task_status?.toLowerCase() === 'daily_login_pending';
+
+                        if (isZerodha && isDailyLoginPending) {
+                          return (
+                            <span className="inline-flex items-center text-sm font-medium text-red-600">
+                              <span className="status-light stopped"></span>
+                              Daily Login Pending
+                            </span>
+                          );
+                        }
                         if (status === 'RUNNING') {
                           return (
                             <span className="inline-flex items-center text-sm text-slate-900 font-medium">

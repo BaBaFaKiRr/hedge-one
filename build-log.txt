@@ -1,19 +1,20 @@
-Need to install the following packages:
-vite@6.4.1
-Ok to proceed? (y) 
-failed to load config from /Users/sarthakaggarwal/Desktop/hedge-one/vite.config.ts
-error during build:
-Error: Cannot find module 'vite'
-Require stack:
-- /Users/sarthakaggarwal/Desktop/hedge-one/vite.config.ts
-- /Users/sarthakaggarwal/.npm/_npx/9ed06546b0653f96/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js
-    at Module._resolveFilename (node:internal/modules/cjs/loader:1140:15)
-    at Module._load (node:internal/modules/cjs/loader:981:27)
-    at Module.require (node:internal/modules/cjs/loader:1231:19)
-    at require (node:internal/modules/helpers:177:18)
-    at Object.<anonymous> (/Users/sarthakaggarwal/Desktop/hedge-one/vite.config.ts:35:19)
-    at Module._compile (node:internal/modules/cjs/loader:1364:14)
-    at _require.extensions.<computed> [as .js] (file:///Users/sarthakaggarwal/.npm/_npx/9ed06546b0653f96/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:49463:16)
-    at Module.load (node:internal/modules/cjs/loader:1203:32)
-    at Module._load (node:internal/modules/cjs/loader:1019:12)
-    at Module.require (node:internal/modules/cjs/loader:1231:19)
+ XHR
+POST
+https://hedgeonenode-production.up.railway.app/brokers
+[HTTP/2 500  2280ms]
+
+Save failed: Error: Request failed with status code 400
+    brokerApiFetch MyKeysPage.tsx:128
+    saveBroker MyKeysPage.tsx:265
+    onClick MyKeysPage.tsx:747
+    React 32
+    openAddDialog MyKeysPage.tsx:181
+    React 23
+    <anonymous> main.tsx:6
+MyKeysPage.tsx:292:15
+    saveBroker MyKeysPage.tsx:292
+    onClick MyKeysPage.tsx:747
+    React 32
+    openAddDialog MyKeysPage.tsx:181
+    React 23
+    <anonymous> main.tsx:6

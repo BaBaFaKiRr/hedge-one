@@ -11,10 +11,8 @@ import {
   SelectValue,
 } from './ui/select';
 import { useAuth } from './AuthContext';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import { Key, Edit3, Trash2, Plus, X } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
 
@@ -25,14 +23,16 @@ interface BrokerRow {
   user_id: string;
   name: string;
   platform: string;
-  api_key: string;
-  api_secret: Nullable<string>;
-  auth_token: Nullable<string>;
-  client_id: Nullable<string>;
-  mpin: Nullable<string>;
-  totp: Nullable<string>;
-  notes: Nullable<string>;
-  mobile_number: Nullable<string>;
+  is_active?: boolean;
+  session_status?: Nullable<string>;
+  api_key?: string;
+  api_secret?: Nullable<string>;
+  auth_token?: Nullable<string>;
+  client_id?: Nullable<string>;
+  mpin?: Nullable<string>;
+  totp?: Nullable<string>;
+  notes?: Nullable<string>;
+  mobile_number?: Nullable<string>;
   created_at?: string;
   updated_at?: string;
 }
@@ -74,8 +74,22 @@ const isFieldRequired = (platform: string | null, fieldName: string): boolean =>
   return config.required.includes(fieldName);
 };
 
+// Map API platform (lowercase) to display value for Select
+const PLATFORM_DISPLAY: Record<string, string> = {
+  zerodha: 'Zerodha',
+  angelone: 'Angelone',
+  groww: 'Groww',
+  kotakneo: 'KotakNeo',
+};
+const toDisplayPlatform = (p: string) => PLATFORM_DISPLAY[p?.toLowerCase()] || p;
+
+const compactObject = <T extends Record<string, any>>(obj: T): Partial<T> =>
+  Object.fromEntries(
+    Object.entries(obj).filter(([, value]) => value !== null && value !== undefined && value !== '')
+  ) as Partial<T>;
+
 export function MyKeysPage() {
-  const { accessToken, user } = useAuth();
+  const { user } = useAuth();
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFetching, setIsFetching] = useState(false);
@@ -94,15 +108,40 @@ export function MyKeysPage() {
   const [newTotp, setNewTotp] = useState('');
   const [isUpdatingTotp, setIsUpdatingTotp] = useState(false);
 
-  const supabase = useMemo(() => {
-    return createClient(
-      `https://${projectId}.supabase.co`,
-      publicAnonKey,
-      {
-        global: accessToken ? { headers: { Authorization: `Bearer ${accessToken}` } } : undefined,
+  const brokerApiBaseUrl = useMemo(
+    () => (((import.meta as any).env?.VITE_NODE_BACKEND_URL as string) || 'http://localhost:3000').replace(/\/$/, ''),
+    []
+  );
+
+  const brokerApiFetch = async (path: string, init?: RequestInit) => {
+    const res = await fetch(`${brokerApiBaseUrl}${path}`, {
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      ...init,
+    });
+
+    const text = await res.text();
+    let body: any = null;
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = { message: text };
       }
-    );
-  }, [accessToken]);
+    }
+
+    if (!res.ok) {
+      const apiMessage = body?.error || body?.message || body?.detail;
+      const fallback = typeof body === 'object' ? JSON.stringify(body) : text || '';
+      const message = apiMessage
+        ? `${apiMessage} (HTTP ${res.status})`
+        : fallback
+          ? `Request failed (HTTP ${res.status}): ${fallback.slice(0, 200)}`
+          : `Request failed (HTTP ${res.status})`;
+      throw new Error(message);
+    }
+
+    return body;
+  };
 
   useEffect(() => {
     if (!user?.id) {
@@ -126,21 +165,15 @@ export function MyKeysPage() {
       window.history.replaceState({}, '', window.location.pathname);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id, supabase]);
+  }, [user?.id]);
 
   const fetchBrokers = async () => {
     if (!user?.id) return;
     setIsFetching(true);
     try {
-      const { data, error } = await supabase
-        .from('user_brokers')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('name', { ascending: true });
-
-      if (error) throw error;
-
-      setBrokers((data || []) as BrokerRow[]);
+      const data = await brokerApiFetch(`/brokers/${user.id}`);
+      const rows = Array.isArray(data) ? data : [];
+      setBrokers(rows as BrokerRow[]);
     } catch (error) {
       console.error('Error fetching brokers:', error);
       toast.error('Failed to load brokers');
@@ -173,21 +206,27 @@ export function MyKeysPage() {
   };
 
   // Open dialog to edit existing broker
-  const openEditDialog = (broker: BrokerRow) => {
-    setEditingId(broker.id);
-    setForm({
-      name: broker.name,
-      platform: broker.platform,
-      api_key: broker.api_key,
-      api_secret: broker.api_secret,
-      auth_token: broker.auth_token,
-      client_id: broker.client_id,
-      mpin: broker.mpin,
-      totp: broker.totp,
-      notes: broker.notes,
-      mobile_number: broker.mobile_number,
-    });
-    setDialogOpen(true);
+  const openEditDialog = async (broker: BrokerRow) => {
+    try {
+      const credentials = await brokerApiFetch(`/brokers/${broker.id}/credentials`);
+      setEditingId(broker.id);
+      setForm({
+        name: broker.name,
+        platform: toDisplayPlatform(broker.platform || ''),
+        api_key: credentials?.api_key || '',
+        api_secret: credentials?.api_secret || null,
+        auth_token: credentials?.auth_token || null,
+        client_id: credentials?.client_id || null,
+        mpin: credentials?.mpin || null,
+        totp: credentials?.totp || null,
+        notes: credentials?.notes ?? broker.notes ?? null,
+        mobile_number: credentials?.mobile_number ?? broker.mobile_number ?? null,
+      });
+      setDialogOpen(true);
+    } catch (err: any) {
+      console.error('Failed to load broker credentials:', err);
+      toast.error(err?.message || 'Failed to load broker credentials');
+    }
   };
 
   const updateForm = <K extends keyof BrokerForm>(field: K, value: BrokerForm[K]) => {
@@ -223,34 +262,35 @@ export function MyKeysPage() {
     }
     setIsSaving(true);
     try {
-      const payload = {
-        user_id: user.id,
-        name: form.name,
-        platform: form.platform,
+      const credentials = compactObject({
         api_key: form.api_key,
         api_secret: form.api_secret,
         auth_token: form.auth_token,
         client_id: form.client_id,
         mpin: form.mpin,
         totp: form.totp,
-        notes: form.notes,
         mobile_number: form.mobile_number || null,
-        updated_at: new Date().toISOString(),
-      };
+      });
 
       if (editingId === null) {
-        // Insert new broker
-        const { error } = await supabase.from('user_brokers').insert([payload]);
-        if (error) throw error;
+        await brokerApiFetch('/brokers', {
+          method: 'POST',
+          body: JSON.stringify({
+            user_id: user.id,
+            name: form.name.trim(),
+            platform: form.platform.toLowerCase(),
+            credentials,
+          }),
+        });
         toast.success('Broker added successfully');
       } else {
-        // Update existing broker
-        const { error } = await supabase
-          .from('user_brokers')
-          .update(payload)
-          .eq('id', editingId)
-          .eq('user_id', user.id);
-        if (error) throw error;
+        await brokerApiFetch('/brokers/update', {
+          method: 'POST',
+          body: JSON.stringify({
+            broker_id: editingId,
+            credentials,
+          }),
+        });
         toast.success('Broker updated successfully');
       }
       setDialogOpen(false);
@@ -264,18 +304,32 @@ export function MyKeysPage() {
   };
 
   const openDailyLoginDialog = (broker: BrokerRow) => {
-    document.cookie =
-      `zerodha_broker_id=${broker.id}; ` +
-      `path=/; ` +
-      `max-age=300; ` +
-      `SameSite=None; ` +
-      `Secure`;
-  
-    const loginUrl =
-      `https://kite.zerodha.com/connect/login` +
-      `?api_key=${broker.api_key}`;
-  
-    window.location.href = loginUrl;
+    const startLogin = async () => {
+      try {
+        const credentials = await brokerApiFetch(`/brokers/${broker.id}/credentials`);
+        if (!credentials?.api_key) {
+          throw new Error('API key not found for this broker');
+        }
+
+        document.cookie =
+          `zerodha_broker_id=${broker.id}; ` +
+          `path=/; ` +
+          `max-age=300; ` +
+          `SameSite=None; ` +
+          `Secure`;
+
+        const loginUrl =
+          `https://kite.zerodha.com/connect/login` +
+          `?api_key=${credentials.api_key}`;
+
+        window.location.href = loginUrl;
+      } catch (err: any) {
+        console.error('Failed to start Zerodha login:', err);
+        toast.error(err?.message || 'Failed to start Zerodha login');
+      }
+    };
+
+    startLogin();
   };
 
   const openTotpUpdateDialog = (broker: BrokerRow) => {
@@ -293,16 +347,13 @@ export function MyKeysPage() {
 
     setIsUpdatingTotp(true);
     try {
-      const { error } = await supabase
-        .from('user_brokers')
-        .update({
-          totp: newTotp.trim(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', currentBrokerForTotp.id)
-        .eq('user_id', user.id);
-
-      if (error) throw error;
+      await brokerApiFetch('/brokers/update', {
+        method: 'POST',
+        body: JSON.stringify({
+          broker_id: currentBrokerForTotp.id,
+          credentials: { totp: newTotp.trim() },
+        }),
+      });
 
       toast.success('TOTP updated successfully');
       setTotpDialogOpen(false);
@@ -326,12 +377,7 @@ export function MyKeysPage() {
 
     setIsDeleting(broker.id);
     try {
-      const { error } = await supabase
-        .from('user_brokers')
-        .delete()
-        .eq('id', broker.id)
-        .eq('user_id', user.id);
-      if (error) throw error;
+      await brokerApiFetch(`/brokers/${broker.id}`, { method: 'DELETE' });
       toast.success('Broker deleted successfully');
       await fetchBrokers();
     } catch (err: any) {
@@ -389,11 +435,11 @@ export function MyKeysPage() {
                   <div className="flex-1">
                     <div className="font-semibold text-slate-900">{broker.name}</div>
                     <div className="text-sm text-slate-600 mt-1">
-                      <span className="font-medium">Platform:</span> {broker.platform}
+                      <span className="font-medium">Platform:</span> {toDisplayPlatform(broker.platform || '')}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    {broker.platform === 'Zerodha' && (
+                    {broker.platform?.toLowerCase() === 'zerodha' && (
                       <Button
                         size="sm"
                         variant="outline"
@@ -402,7 +448,7 @@ export function MyKeysPage() {
                         Daily Login
                       </Button>
                     )}
-                    {broker.platform === 'KotakNeo' && (
+                    {broker.platform?.toLowerCase() === 'kotakneo' && (
                       <Button
                         size="sm"
                         variant="outline"
