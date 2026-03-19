@@ -298,13 +298,63 @@ await fetch('/brokers/update', {
 
 ## Behavior
 
-* Merges with existing credentials
-* Updates session status internally
+* **Merge** with existing credentials (do not replace entire secrets in Doppler). Example: if callback sends `{ auth_token: "new_token" }`, backend must read current secrets for that broker from Doppler, set `auth_token: "new_token"`, and write the merged object back.
+* Updates session status internally if applicable
 
 ## UI Behavior
 
 * Show success message
 * Optionally refresh broker list
+
+---
+
+# 🔄 Zerodha Daily Login (End-to-End)
+
+Zerodha requires a daily login: user is sent to Kite with their **api_key**; after login Zerodha redirects back with a **request_token** that must be stored as **auth_token** in Doppler for that broker.
+
+## Flow
+
+1. **Frontend (My Brokers)**  
+   User clicks "Daily Login" on a Zerodha broker →
+   - Frontend calls **GET /brokers/:broker_id/credentials** to get `api_key` (no secrets stored in UI).
+   - Frontend sets a short-lived cookie `zerodha_broker_id=<broker_id>` (so the callback knows which broker to update).
+   - Frontend redirects the browser to:  
+     `https://kite.zerodha.com/connect/login?api_key=<api_key>`.
+
+2. **Zerodha**  
+   User logs in on Kite. Zerodha redirects the browser to your **callback URL** with query `request_token=...`.  
+   The callback URL must be exactly what you set in the Zerodha app dashboard (e.g. `https://hedgeone.co.in/api/zerodha/callback`).
+
+3. **Callback (Vercel serverless)**  
+   - Reads `request_token` from query and `zerodha_broker_id` from cookie.
+   - Calls **POST /brokers/update** with body:  
+     `{ "broker_id": "<id>", "credentials": { "auth_token": "<request_token>" } }`.
+   - Clears the cookie and redirects the user to the app with `?zerodha=success` or `?zerodha=failed`.
+
+4. **Node backend (your responsibility)**  
+   - **POST /brokers/update** must **merge** the incoming `credentials` into the existing broker secrets in Doppler (e.g. update only `auth_token` and leave `api_key`, `api_secret`, etc. unchanged).
+   - Do **not** replace the whole secrets object with `{ auth_token: "..." }` only.
+
+## Backend implementation sketch
+
+```js
+// POST /brokers/update
+// body: { broker_id, credentials: { auth_token: "..." } }
+
+// 1. Load current secrets from Doppler for this broker (by broker_id).
+// 2. Merge: merged = { ...currentSecrets, ...body.credentials }.
+// 3. Write merged back to Doppler (secrets must be an object, not array).
+// 4. Optionally update Supabase broker row (e.g. session_status, updated_at).
+```
+
+## Requirements
+
+| Component | Requirement |
+|-----------|-------------|
+| **GET /brokers/:id/credentials** | Must return at least `api_key` for Zerodha so Daily Login can build the Kite URL. |
+| **POST /brokers/update** | Must accept partial `credentials` (e.g. only `auth_token`) and **merge** into Doppler, not replace. |
+| **Zerodha app dashboard** | Redirect URL must match your callback (e.g. `https://hedgeone.co.in/api/zerodha/callback`). |
+| **Vercel** | Set `NODE_BACKEND_URL` to your Railway backend so the callback can call POST /brokers/update. |
 
 ---
 

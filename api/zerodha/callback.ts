@@ -47,19 +47,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       throw new Error(errBody || "Broker update failed");
     }
 
-    // Clear cookie
+    const redirectBase =
+      process.env.ZERODHA_REDIRECT_AFTER_LOGIN ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://hedgeone.co.in");
+
+    // Clear cookie (Path and Secure must match how frontend set it)
     res.setHeader(
       "Set-Cookie",
-      "zerodha_broker_id=; Path=/; Max-Age=0; SameSite=Lax"
+      "zerodha_broker_id=; Path=/; Max-Age=0; SameSite=None; Secure"
     );
 
-    return res.redirect(
-      "https://hedgeone.co.in/?zerodha=success"
-    );
+    return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=success`);
   } catch (err) {
     console.error("Zerodha callback error:", err);
-    return res.redirect(
-      "https://hedgeone.co.in/?zerodha=failed"
-    );
+    const redirectBase =
+      process.env.ZERODHA_REDIRECT_AFTER_LOGIN ||
+      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://hedgeone.co.in");
+    return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=failed`);
   }
 }
