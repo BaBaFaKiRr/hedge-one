@@ -61,8 +61,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     console.error("Zerodha callback error:", err);
     const redirectBase =
-      process.env.ZERODHA_REDIRECT_AFTER_LOGIN ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://hedgeone.co.in");
+    "https://hedgeone.co.in";
     return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=failed`);
   }
 }
