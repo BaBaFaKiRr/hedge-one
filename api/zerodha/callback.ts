@@ -48,8 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const redirectBase =
-      process.env.ZERODHA_REDIRECT_AFTER_LOGIN ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "https://hedgeone.co.in");
+      "https://hedgeone.co.in";
 
     // Clear cookie (Path and Secure must match how frontend set it)
     res.setHeader(
@@ -59,9 +58,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=success`);
   } catch (err) {
-    console.error("Zerodha callback error:", err);
     const redirectBase =
     "https://hedgeone.co.in";
-    return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=failed`);
+    return res.redirect(`${redirectBase.replace(/\/$/, "")}`);
   }
 }
