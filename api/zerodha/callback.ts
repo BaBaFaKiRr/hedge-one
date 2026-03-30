@@ -41,14 +41,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
+    const redirectBase = "https://hedgeone.co.in".replace(/\/$/, "");
+
     if (!updateRes.ok) {
+      let reason = "session_failed";
       const errBody = await updateRes.text();
       console.error("Node backend update failed:", updateRes.status, errBody);
-      throw new Error(errBody || "Broker update failed");
+      try {
+        const j = JSON.parse(errBody) as { error?: string };
+        if (j?.error) reason = encodeURIComponent(String(j.error).slice(0, 300));
+      } catch {
+        /* plain text body */
+      }
+      res.setHeader(
+        "Set-Cookie",
+        "zerodha_broker_id=; Path=/; Max-Age=0; SameSite=None; Secure"
+      );
+      return res.redirect(`${redirectBase}/?zerodha=failed&reason=${reason}`);
     }
-
-    const redirectBase =
-      "https://hedgeone.co.in";
 
     // Clear cookie (Path and Secure must match how frontend set it)
     res.setHeader(
@@ -56,10 +66,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       "zerodha_broker_id=; Path=/; Max-Age=0; SameSite=None; Secure"
     );
 
-    return res.redirect(`${redirectBase.replace(/\/$/, "")}/?zerodha=success`);
+    return res.redirect(`${redirectBase}/?zerodha=success`);
   } catch (err) {
-    const redirectBase =
-    "https://hedgeone.co.in";
-    return res.redirect(`${redirectBase.replace(/\/$/, "")}`);
+    const redirectBase = "https://hedgeone.co.in".replace(/\/$/, "");
+    return res.redirect(`${redirectBase}/?zerodha=failed`);
   }
 }
