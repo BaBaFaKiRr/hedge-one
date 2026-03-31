@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from './ui/collapsible';
 import {
   Select,
   SelectContent,
@@ -12,7 +13,7 @@ import {
 } from './ui/select';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
-import { Key, Edit3, Trash2, Plus, X } from 'lucide-react';
+import { Key, Edit3, Trash2, Plus, X, HelpCircle, ExternalLink, ChevronDown } from 'lucide-react';
 import * as Dialog from "@radix-ui/react-dialog";
 import './global.css';
 
@@ -88,6 +89,95 @@ const compactObject = <T extends Record<string, any>>(obj: T): Partial<T> =>
     Object.entries(obj).filter(([, value]) => value !== null && value !== undefined && value !== '')
   ) as Partial<T>;
 
+interface GuideStep {
+  text: string;
+  screenshots?: string[];
+}
+
+interface GuideSection {
+  broker: string;
+  steps: GuideStep[];
+}
+
+const kotakneo1 = new URL('./add_broker_images/kotakneo1.png', import.meta.url).href;
+const kotakneo2 = new URL('./add_broker_images/kotakneo2.png', import.meta.url).href;
+const kite1 = new URL('./add_broker_images/kite1.png', import.meta.url).href;
+const kite2 = new URL('./add_broker_images/kite2.png', import.meta.url).href;
+const kite3 = new URL('./add_broker_images/kite3.png', import.meta.url).href;
+const kite4 = new URL('./add_broker_images/kite4.png', import.meta.url).href;
+const kite5 = new URL('./add_broker_images/kite5.png', import.meta.url).href;
+const angelone1 = new URL('./add_broker_images/angelone1.png', import.meta.url).href;
+
+const BROKER_GUIDE_SECTIONS: GuideSection[] = [
+  {
+    broker: 'Kotak Neo',
+    steps: [
+      { text: 'Go to https://www.kotakneo.com/platform/kotak-neo-trade-api/' },
+      { text: 'Click on Login on top right and log in to your Kotak Neo brokerage account.' },
+      { text: 'Click on More on top right.' },
+      { text: 'Click on Trade API.', screenshots: [kotakneo1] },
+      { text: 'Click on Create API key.' },
+      { text: 'Copy the Client token. This is your API Key.' },
+      { text: 'Add 54.79.156.120 to Primary IP / IP whitelist.', screenshots: [kotakneo2] },
+      { text: 'Now go to Profile -> Account details.' },
+      { text: 'Locate your Unique Client Code. This is your Client ID.' },
+      { text: 'Locate the 2FA Authenticator code you previously setup. This is your TOTP.' },
+      { text: 'Go to My Brokers tab on HedgeOne and click Add Broker.' },
+      { text: 'Fill in the credentials collected and press Save.' },
+      { text: 'Kotak Neo requires frequent TOTP refresh (valid for ~30 sec). Use Update TOTP before deploying.' },
+    ],
+  },
+  {
+    broker: 'Zerodha',
+    steps: [
+      { text: 'Go to https://zerodha.com/products/api/' },
+      { text: 'Press Get API Key.', screenshots: [kite1] },
+      { text: 'Fill out the form using the email linked to your Zerodha broker account.', screenshots: [kite2] },
+      { text: 'Add IP 54.79.156.120 to IP Whitelist.' },
+      { text: 'Press Sign Up.' },
+      { text: 'On My apps page, click Create new app.', screenshots: [kite3] },
+      { text: 'Choose Personal in type.' },
+      { text: 'Set any app name you want.' },
+      { text: 'Enter your Zerodha Client ID (from Zerodha profile page).' },
+      { text: 'Set Redirect URL: https://hedgeone.co.in/api/zerodha/callback' },
+      { text: 'Click Create.', screenshots: [kite4] },
+      { text: 'Open the newly created app from My Apps.' },
+      { text: 'Copy API Key and API Secret.', screenshots: [kite5] },
+      { text: 'Go to My Brokers tab on HedgeOne and click Add Broker.' },
+      { text: 'Fill in the credentials collected and press Save.' },
+      { text: 'Run Daily Login every morning. Zerodha session resets at midnight daily.' },
+    ],
+  },
+  {
+    broker: 'Angel One',
+    steps: [
+      { text: 'Go to https://smartapi.angelbroking.com/' },
+      { text: 'Press Enable TOTP and sign in using your Client ID and MPIN.' },
+      { text: 'Copy the TOTP code.' },
+      { text: 'Press Login on top right.' },
+      { text: 'Login to your Angel One account.' },
+      { text: 'Press ADD APP, add 54.79.156.120 to Primary Static IP, and submit.' },
+      { text: 'Copy your API Key and Secret Key.', screenshots: [angelone1] },
+      { text: 'Go to My Brokers tab on HedgeOne and click Add Broker.' },
+      { text: 'Fill in the credentials collected and press Save.' },
+    ],
+  },
+];
+
+const formatBrokerName = (name: string): string => {
+  const normalized = name.trim().toLowerCase();
+  if (normalized === 'kotak neo' || normalized === 'kotakneo') return 'Kotak Neo';
+  if (normalized === 'angelone') return 'Angel One';
+  if (normalized === 'zerodha') return 'Zerodha';
+  if (normalized === 'groww') return 'Groww';
+  return name;
+};
+
+const extractUrl = (text: string): string | null => {
+  const match = text.match(/https?:\/\/[^\s]+/i);
+  return match?.[0] ?? null;
+};
+
 export function MyKeysPage() {
   const { user } = useAuth();
   const [brokers, setBrokers] = useState<BrokerRow[]>([]);
@@ -107,6 +197,11 @@ export function MyKeysPage() {
   const [currentBrokerForTotp, setCurrentBrokerForTotp] = useState<BrokerRow | null>(null);
   const [newTotp, setNewTotp] = useState('');
   const [isUpdatingTotp, setIsUpdatingTotp] = useState(false);
+  const guideSections = useMemo(() => BROKER_GUIDE_SECTIONS, []);
+  const [selectedGuideBroker, setSelectedGuideBroker] = useState<string>(guideSections[0]?.broker || '');
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const activeGuideSection = guideSections.find((section) => section.broker === selectedGuideBroker);
+  const [lightboxImage, setLightboxImage] = useState<{ src: string; alt: string } | null>(null);
 
   const brokerApiBaseUrl = useMemo(
     () => (((import.meta as any).env?.VITE_NODE_BACKEND_URL as string) || 'http://localhost:3000').replace(/\/$/, ''),
@@ -481,6 +576,114 @@ export function MyKeysPage() {
         </CardContent>
       </Card>
 
+      <Card>
+        <Collapsible open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+          <CardHeader>
+            <CollapsibleTrigger asChild>
+              <button
+                type="button"
+                className="w-full text-left flex items-start justify-between gap-4 hover:opacity-90 transition-opacity"
+              >
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <HelpCircle className="h-5 w-5" />
+                    How to get broker credentials?
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    Follow broker-specific steps to collect API credentials for HedgeOne.
+                  </CardDescription>
+                </div>
+                <ChevronDown
+                  className={`h-5 w-5 text-slate-500 mt-0.5 transition-transform ${isGuideOpen ? 'rotate-180' : ''}`}
+                />
+              </button>
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
+            <CardContent className="space-y-5">
+              <div className="flex flex-wrap gap-2">
+                {guideSections.map((section) => (
+                  <Button
+                    key={section.broker}
+                    variant={selectedGuideBroker === section.broker ? 'default' : 'outline'}
+                    onClick={() => setSelectedGuideBroker(section.broker)}
+                  >
+                    {formatBrokerName(section.broker)}
+                  </Button>
+                ))}
+              </div>
+
+              {activeGuideSection ? (
+                <div className="space-y-4">
+                  <h2 className="text-lg font-semibold text-slate-900 border-b border-slate-200 pb-2">
+                    {formatBrokerName(selectedGuideBroker)}
+                  </h2>
+                  <ol className="space-y-3">
+                    {activeGuideSection.steps.map((step, index) => {
+                      const url = extractUrl(step.text);
+                      return (
+                        <li key={`${selectedGuideBroker}-${index}`} className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                          <div className="flex items-start gap-3">
+                            <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
+                              {index + 1}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm leading-6 text-slate-800">
+                                {step.text}
+                              </p>
+                              {url && (
+                                <a
+                                  href={url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-2 inline-flex items-center gap-1 text-sm font-medium text-blue-700 hover:underline"
+                                >
+                                  Open link
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                          {step.screenshots && step.screenshots.length > 0 && (
+                            <div className="mt-3 grid grid-cols-1 gap-3">
+                              {step.screenshots.map((imageSrc, imageIndex) => (
+                                <button
+                                  key={`${selectedGuideBroker}-${index}-image-${imageIndex}`}
+                                  type="button"
+                                  className="group inline-flex w-fit flex-col items-start gap-1 text-left"
+                                  onClick={() =>
+                                    setLightboxImage({
+                                      src: imageSrc,
+                                      alt: `${formatBrokerName(selectedGuideBroker)} guide step ${index + 1}`,
+                                    })
+                                  }
+                                >
+                                  <img
+                                    src={imageSrc}
+                                    alt={`${formatBrokerName(selectedGuideBroker)} guide step ${index + 1}`}
+                                    className="h-[5.4rem] w-auto max-w-full rounded-md border border-slate-200 bg-white object-contain shadow-sm transition-transform group-hover:scale-[1.01]"
+                                    loading="lazy"
+                                  />
+                                  <span className="text-xs text-slate-500 group-hover:text-slate-700">
+                                    Click to zoom
+                                  </span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              ) : (
+                <div className="text-slate-500">No broker guide is available yet.</div>
+              )}
+            </CardContent>
+          </CollapsibleContent>
+        </Collapsible>
+      </Card>
+
       {/** Dialog - reused for Add and Edit */}
       <Dialog.Root open={dialogOpen} onOpenChange={(o) => {
         setDialogOpen(o);
@@ -830,6 +1033,34 @@ export function MyKeysPage() {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {lightboxImage && (
+        <div
+          className="fixed inset-0 z-[12000] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setLightboxImage(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div
+            className="relative w-full max-w-6xl rounded-xl border border-slate-700 bg-slate-900/95 p-3 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setLightboxImage(null)}
+              className="absolute right-2 top-2 rounded-full p-1.5 text-slate-200 hover:bg-white/10"
+              aria-label="Close image preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <img
+              src={lightboxImage.src}
+              alt={lightboxImage.alt}
+              className="mx-auto max-h-[85vh] w-auto max-w-full rounded-md object-contain"
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );
