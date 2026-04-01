@@ -47,6 +47,10 @@ interface StrategyCatalogRow {
 interface BrokerRow {
   id: string;
   name: string;
+  session_status?: Nullable<string>;
+  session_last_error?: Nullable<string>;
+  session_last_verified_at?: Nullable<string>;
+  session_expires_at?: Nullable<string>;
 }
 
 interface TelegramRow {
@@ -58,6 +62,8 @@ interface UserStrategyDisplay extends UserStrategyRow {
   strategy_name?: string;
   broker_name?: Nullable<string>;
   telegram_label?: Nullable<string>;
+  broker_session_status?: Nullable<string>;
+  broker_session_last_error?: Nullable<string>;
 }
 
 interface EditForm {
@@ -123,6 +129,29 @@ export function PortfolioPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, supabase]);
 
+  useEffect(() => {
+    if (!user?.id) return;
+    const channel = supabase
+      .channel(`portfolio-user-brokers-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'user_brokers',
+          filter: `user_id=eq.${user.id}`,
+        },
+        async () => {
+          await fetchData();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, supabase]);
+
   const fetchData = async () => {
     if (!user?.id) return;
     setIsFetching(true);
@@ -152,7 +181,7 @@ export function PortfolioPage() {
       // Fetch brokers
       const { data: brokersData, error: brokersError } = await supabase
         .from('user_brokers')
-        .select('id, name')
+        .select('id, name, session_status, session_last_error, session_last_verified_at, session_expires_at')
         .eq('user_id', user.id)
         .order('name', { ascending: true });
 
@@ -184,6 +213,7 @@ export function PortfolioPage() {
       // Combine data
       const strategiesMap = new Map((strategiesData || []).map(s => [s.id, s.name]));
       const brokersMap = new Map((brokersData || []).map(b => [b.id, b.name]));
+      const brokersMetaMap = new Map((brokersData || []).map(b => [b.id, b]));
       const telegramsMap = new Map((telegramsData || []).map(t => [t.id, t.label || 'Unnamed']));
 
       const enrichedStrategies: UserStrategyDisplay[] = (userStrategies || []).map(strategy => ({
@@ -191,6 +221,8 @@ export function PortfolioPage() {
         strategy_name: strategiesMap.get(strategy.strategy_id) || strategy.strategy_id,
         broker_name: strategy.broker_id ? brokersMap.get(strategy.broker_id) || null : null,
         telegram_label: strategy.telegram_chat_id ? telegramsMap.get(strategy.telegram_chat_id) || null : null,
+        broker_session_status: strategy.broker_id ? brokersMetaMap.get(strategy.broker_id)?.session_status || null : null,
+        broker_session_last_error: strategy.broker_id ? brokersMetaMap.get(strategy.broker_id)?.session_last_error || null : null,
       }));
 
       const enrichedStrategiesInError: UserStrategyDisplay[] = (userStrategiesInError || []).map(strategy => ({
@@ -198,6 +230,8 @@ export function PortfolioPage() {
         strategy_name: strategiesMap.get(strategy.strategy_id) || strategy.strategy_id,
         broker_name: strategy.broker_id ? brokersMap.get(strategy.broker_id) || null : null,
         telegram_label: strategy.telegram_chat_id ? telegramsMap.get(strategy.telegram_chat_id) || null : null,
+        broker_session_status: strategy.broker_id ? brokersMetaMap.get(strategy.broker_id)?.session_status || null : null,
+        broker_session_last_error: strategy.broker_id ? brokersMetaMap.get(strategy.broker_id)?.session_last_error || null : null,
       }));
 
       setStrategies(enrichedStrategies);
@@ -567,6 +601,23 @@ export function PortfolioPage() {
     });
   };
 
+  const renderBrokerSessionStatus = (strategy: UserStrategyDisplay) => {
+    const status = (strategy.broker_session_status || 'inactive').toLowerCase();
+    if (status === 'active') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">Active</span>;
+    }
+    if (status === 'daily_login_required') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-700">Daily Login Required</span>;
+    }
+    if (status === 'checking') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">Checking...</span>;
+    }
+    if (status === 'error') {
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700">Error: Please re-deploy the strategy</span>;
+    }
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700">Inactive</span>;
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -834,6 +885,10 @@ export function PortfolioPage() {
                           className={`h-3 w-3 text-slate-500 ${isFetching ? 'animate-spin' : ''}`} 
                         />
                       </button>
+                    </div>
+                    <div className="flex items-center gap-2 portfolio-strategy-detail-item">
+                      <span className="text-sm text-slate-600">Broker Session:</span>
+                      {renderBrokerSessionStatus(strategy)}
                     </div>
                   </div>
 

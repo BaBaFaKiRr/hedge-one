@@ -54,3 +54,7 @@ Here add ./add_broker_images/angelone1.png
 8) Finally go to "My Brokers" tab on HedgeOne platform and press "Add Broker"
 9) Fill in the credentials we collected and press "Save"
 
+Groww
+1) Go to https://groww.in/trade-api/docs
+2) click on "Get API Key"
+3) 
