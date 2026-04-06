@@ -10,14 +10,24 @@ import { StrategiesPage } from './components/StrategiesPage';
 import { StrategyDetailPage } from './components/StrategyDetailPage';
 import { PortfolioPage } from './components/PortfolioPage';
 import { TradebookPage } from './components/TradebookPage';
+import { TradeDetailPage } from './components/TradeDetailPage';
 import { Toaster } from './components/ui/sonner';
 
-type PageType = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'tradebook' | 'strategy-detail';
+type PageType =
+  | 'home'
+  | 'mykeys'
+  | 'telegram'
+  | 'strategies'
+  | 'portfolio'
+  | 'tradebook'
+  | 'strategy-detail'
+  | 'trade-detail';
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
+  const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
   const [showLogin, setShowLogin] = useState(false);
 
   if (isLoading) {
@@ -76,7 +86,26 @@ function AppContent() {
       case 'portfolio':
         return <PortfolioPage />;
       case 'tradebook':
-        return <TradebookPage />;
+        return (
+          <TradebookPage
+            onOpenTrade={(id) => {
+              setSelectedTradeId(id);
+              setCurrentPage('trade-detail');
+            }}
+          />
+        );
+      case 'trade-detail':
+        return selectedTradeId != null ? (
+          <TradeDetailPage
+            tradeId={selectedTradeId}
+            onBack={() => {
+              setSelectedTradeId(null);
+              setCurrentPage('tradebook');
+            }}
+          />
+        ) : (
+          <TradebookPage />
+        );
       default:
         return <HomePage />;
     }

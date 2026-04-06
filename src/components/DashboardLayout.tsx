@@ -15,7 +15,7 @@ import { LayoutDashboard, Key, LogOut, Menu, X, MessageSquare, Zap, Briefcase, B
 import appLogo from './app_logo.png';
 
 type BasePage = 'home' | 'mykeys' | 'telegram' | 'strategies' | 'portfolio' | 'tradebook';
-type ExtendedPage = BasePage | 'strategy-detail';
+type ExtendedPage = BasePage | 'strategy-detail' | 'trade-detail';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -63,7 +63,12 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
   };
 
   // Map strategy-detail to strategies for active state
-  const activePageForMenu = currentPage === 'strategy-detail' ? 'strategies' : currentPage;
+  const activePageForMenu =
+    currentPage === 'strategy-detail'
+      ? 'strategies'
+      : currentPage === 'trade-detail'
+        ? 'tradebook'
+        : currentPage;
 
   return (
     <div className="min-h-screen bg-slate-50">

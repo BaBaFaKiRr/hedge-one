@@ -14,16 +14,23 @@ import {
 } from './ui/select';
 import { toast } from 'sonner';
 import { BarChart3, RotateCcw } from 'lucide-react';
+import { formatInr } from '../utils/currency';
 
-interface Trade {
+export interface TradebookRow {
   id: number;
-  user: string | null;
   stock_option: string | null;
-  position: string | null;
-  price: number | null;
-  date_time: string | null;
-  strategy: string | null;
+  strategy: string;
   qty: number | null;
+  entry_side: string;
+  entry_price: number | null;
+  entry_at: string;
+  exit_side: string | null;
+  exit_price: number | null;
+  exit_at: string | null;
+  realized_pnl: number | null;
+  dry_run: boolean;
+  broker_name: string | null;
+  broker_platform: string | null;
 }
 
 const STRATEGY_OPTIONS: { value: string; label: string }[] = [
@@ -33,9 +40,19 @@ const STRATEGY_OPTIONS: { value: string; label: string }[] = [
   { value: 'stock_ema_crossover', label: 'Stock EMA Crossover' },
 ];
 
-export function TradebookPage() {
+function strategyLabel(id: string | null): string {
+  if (!id) return '—';
+  const opt = STRATEGY_OPTIONS.find((o) => o.value === id);
+  return opt ? opt.label : id;
+}
+
+interface TradebookPageProps {
+  onOpenTrade?: (tradeId: number) => void;
+}
+
+export function TradebookPage({ onOpenTrade }: TradebookPageProps) {
   const { user, accessToken } = useAuth();
-  const [trades, setTrades] = useState<Trade[]>([]);
+  const [trades, setTrades] = useState<TradebookRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [strategyFilter, setStrategyFilter] = useState<string>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
@@ -56,13 +73,15 @@ export function TradebookPage() {
     try {
       const { data, error } = await supabase
         .from('trades')
-        .select('id, user, stock_option, position, price, date_time, strategy, qty')
-        .eq('user', user.id)
-        .order('date_time', { ascending: false });
+        .select(
+          'id, stock_option, strategy, qty, entry_side, entry_price, entry_at, exit_side, exit_price, exit_at, realized_pnl, dry_run, broker_name, broker_platform'
+        )
+        .eq('user_id', user.id)
+        .order('entry_at', { ascending: false });
 
       if (error) throw error;
 
-      setTrades((data ?? []) as Trade[]);
+      setTrades((data ?? []) as TradebookRow[]);
     } catch (error) {
       console.error('Error fetching trades:', error);
       toast.error('Failed to load trades');
@@ -76,10 +95,9 @@ export function TradebookPage() {
     fetchTrades();
   }, [fetchTrades]);
 
-  // Generate month options from oldest trade to current month
   const monthOptions = useMemo(() => {
     const dates = trades
-      .map((t) => t.date_time)
+      .map((t) => t.entry_at)
       .filter((d): d is string => !!d)
       .map((d) => new Date(d));
 
@@ -99,17 +117,15 @@ export function TradebookPage() {
       current.setMonth(current.getMonth() + 1);
     }
 
-    // Sort newest first
     options.reverse();
     return options;
   }, [trades]);
 
-  // Filtered trades
   const filteredTrades = useMemo(() => {
     return trades.filter((trade) => {
       if (strategyFilter !== 'all' && trade.strategy !== strategyFilter) return false;
-      if (dateRangeFilter !== 'all' && trade.date_time) {
-        const tradeDate = new Date(trade.date_time);
+      if (dateRangeFilter !== 'all' && trade.entry_at) {
+        const tradeDate = new Date(trade.entry_at);
         const tradeMonth = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}`;
         if (tradeMonth !== dateRangeFilter) return false;
       }
@@ -117,24 +133,12 @@ export function TradebookPage() {
     });
   }, [trades, strategyFilter, dateRangeFilter]);
 
-  const getStrategyLabel = (strategyId: string | null) => {
-    if (!strategyId) return '—';
-    const opt = STRATEGY_OPTIONS.find((o) => o.value === strategyId);
-    return opt ? opt.label : strategyId;
-  };
-
-  const formatDateTime = (dateTime: string | null) => {
-    if (!dateTime) return '—';
-    const date = new Date(dateTime);
-    return date.toLocaleString('en-US', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: false,
-    });
+  const formatEntryExitSummary = (t: TradebookRow): string => {
+    const en = t.entry_side || '';
+    const ex = t.exit_side ?? null;
+    const ep = formatInr(t.entry_price);
+    if (!ex) return `${en} ${ep} → …`;
+    return `${en} ${ep} → ${ex} ${formatInr(t.exit_price)}`;
   };
 
   const resetFilters = () => {
@@ -165,11 +169,10 @@ export function TradebookPage() {
             All Trades
           </CardTitle>
           <CardDescription>
-            Trades matched to your account. Use filters to narrow down results.
+            Trades matched to your account. Click a row for details.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {/* Filters */}
           <div className="flex flex-wrap items-center gap-4 mb-6">
             <div className="flex items-center gap-2">
               <label className="text-sm font-medium text-slate-700">Strategy:</label>
@@ -210,9 +213,7 @@ export function TradebookPage() {
           </div>
 
           {isLoading ? (
-            <div className="text-center py-12 text-slate-500 text-sm">
-              Loading trades...
-            </div>
+            <div className="text-center py-12 text-slate-500 text-sm">Loading trades...</div>
           ) : filteredTrades.length === 0 ? (
             <div className="text-center py-12 text-slate-500 text-sm">
               No trades found{strategyFilter !== 'all' || dateRangeFilter !== 'all' ? ' matching filters' : ''}.
@@ -223,26 +224,53 @@ export function TradebookPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-14">Sno</TableHead>
-                    <TableHead>Security</TableHead>
                     <TableHead>Strategy</TableHead>
-                    <TableHead>Trade Type</TableHead>
-                    <TableHead>Price</TableHead>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>Qty</TableHead>
+                    <TableHead>Token</TableHead>
+                    <TableHead>Broker</TableHead>
+                    <TableHead>Entry → Exit</TableHead>
+                    <TableHead>P&amp;L</TableHead>
+                    <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTrades.map((trade, index) => (
-                    <TableRow key={trade.id}>
+                    <TableRow
+                      key={trade.id}
+                      className={onOpenTrade ? 'cursor-pointer hover:bg-slate-50' : undefined}
+                      onClick={() => onOpenTrade?.(trade.id)}
+                      role={onOpenTrade ? 'button' : undefined}
+                    >
                       <TableCell className="font-medium">{index + 1}</TableCell>
+                      <TableCell>{strategyLabel(trade.strategy)}</TableCell>
                       <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                      <TableCell>{getStrategyLabel(trade.strategy)}</TableCell>
-                      <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
-                      <TableCell>
-                        {trade.price != null ? `$${trade.price.toFixed(2)}` : '—'}
+                      <TableCell className="text-sm">
+                        {[trade.broker_name, trade.broker_platform].filter(Boolean).join(' · ') || '—'}
                       </TableCell>
-                      <TableCell>{formatDateTime(trade.date_time)}</TableCell>
-                      <TableCell>{trade.qty ?? '—'}</TableCell>
+                      <TableCell className="text-sm font-mono">{formatEntryExitSummary(trade)}</TableCell>
+                      <TableCell
+                        className={
+                          trade.realized_pnl == null
+                            ? 'text-slate-500'
+                            : trade.realized_pnl >= 0
+                              ? 'text-green-600 font-medium'
+                              : 'text-red-600 font-medium'
+                        }
+                      >
+                        {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {trade.entry_at
+                          ? new Date(trade.entry_at).toLocaleString('en-IN', {
+                              year: 'numeric',
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour12: false,
+                            })
+                          : '—'}
+                        {trade.dry_run && (
+                          <span className="ml-2 text-xs text-amber-700">(paper)</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

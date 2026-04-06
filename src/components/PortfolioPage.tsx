@@ -13,6 +13,7 @@ import {
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
+import { formatInr } from '../utils/currency';
 import { Briefcase, Edit3, Trash2, X, RefreshCw, BarChart3, ChevronDown, ChevronUp, ChevronLeft, ChevronRight, AlertTriangle, Rocket } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
@@ -75,12 +76,13 @@ interface EditForm {
 
 interface StrategyTrade {
   id: number;
-  user: string | null;
   stock_option: string | null;
-  position: string | null;
-  price: number | null;
-  date_time: string | null;
-  strategy: string | null;
+  entry_at: string;
+  entry_side: string;
+  entry_price: number | null;
+  exit_at: string | null;
+  exit_price: number | null;
+  realized_pnl: number | null;
   qty: number | null;
 }
 
@@ -538,10 +540,12 @@ export function PortfolioPage() {
     try {
       const { data, error } = await supabase
         .from('trades')
-        .select('id, user, stock_option, position, price, date_time, strategy, qty')
-        .eq('user', user.id)
+        .select(
+          'id, stock_option, entry_at, entry_side, entry_price, exit_at, exit_price, realized_pnl, qty'
+        )
+        .eq('user_id', user.id)
         .eq('strategy', strategy.strategy_id)
-        .order('date_time', { ascending: false })
+        .order('entry_at', { ascending: false })
         .limit(200);
 
       if (error) throw error;
@@ -919,9 +923,10 @@ export function PortfolioPage() {
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Security</TableHead>
-                                  <TableHead>Trade Type</TableHead>
-                                  <TableHead>Price</TableHead>
-                                  <TableHead>Date/Time</TableHead>
+                                  <TableHead>Side</TableHead>
+                                  <TableHead>Entry</TableHead>
+                                  <TableHead>Exit</TableHead>
+                                  <TableHead>P&amp;L</TableHead>
                                   <TableHead>Qty</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -929,11 +934,32 @@ export function PortfolioPage() {
                                 {getPaginatedTrades(strategy.id).map((trade) => (
                                   <TableRow key={trade.id}>
                                     <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                                    <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                                    <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
                                     <TableCell>
-                                      {trade.price != null ? `$${trade.price.toFixed(2)}` : '—'}
+                                      {trade.entry_price != null
+                                        ? formatInr(trade.entry_price)
+                                        : '—'}
+                                      <span className="text-slate-500 text-xs block">
+                                        {formatDateTime(trade.entry_at)}
+                                      </span>
                                     </TableCell>
-                                    <TableCell>{formatDateTime(trade.date_time)}</TableCell>
+                                    <TableCell>
+                                      {trade.exit_at == null
+                                        ? 'Open'
+                                        : trade.exit_price != null
+                                          ? formatInr(trade.exit_price)
+                                          : '—'}
+                                      {trade.exit_at && (
+                                        <span className="text-slate-500 text-xs block">
+                                          {formatDateTime(trade.exit_at)}
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {trade.realized_pnl == null
+                                        ? '—'
+                                        : formatInr(trade.realized_pnl)}
+                                    </TableCell>
                                     <TableCell>{trade.qty ?? '—'}</TableCell>
                                   </TableRow>
                                 ))}
@@ -1147,9 +1173,10 @@ export function PortfolioPage() {
                               <TableHeader>
                                 <TableRow>
                                   <TableHead>Security</TableHead>
-                                  <TableHead>Trade Type</TableHead>
-                                  <TableHead>Price</TableHead>
-                                  <TableHead>Date/Time</TableHead>
+                                  <TableHead>Side</TableHead>
+                                  <TableHead>Entry</TableHead>
+                                  <TableHead>Exit</TableHead>
+                                  <TableHead>P&amp;L</TableHead>
                                   <TableHead>Qty</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -1157,11 +1184,32 @@ export function PortfolioPage() {
                                 {getPaginatedTrades(strategy.id).map((trade) => (
                                   <TableRow key={trade.id}>
                                     <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                                    <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                                    <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
                                     <TableCell>
-                                      {trade.price != null ? `$${trade.price.toFixed(2)}` : '—'}
+                                      {trade.entry_price != null
+                                        ? formatInr(trade.entry_price)
+                                        : '—'}
+                                      <span className="text-slate-500 text-xs block">
+                                        {formatDateTime(trade.entry_at)}
+                                      </span>
                                     </TableCell>
-                                    <TableCell>{formatDateTime(trade.date_time)}</TableCell>
+                                    <TableCell>
+                                      {trade.exit_at == null
+                                        ? 'Open'
+                                        : trade.exit_price != null
+                                          ? formatInr(trade.exit_price)
+                                          : '—'}
+                                      {trade.exit_at && (
+                                        <span className="text-slate-500 text-xs block">
+                                          {formatDateTime(trade.exit_at)}
+                                        </span>
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {trade.realized_pnl == null
+                                        ? '—'
+                                        : formatInr(trade.realized_pnl)}
+                                    </TableCell>
                                     <TableCell>{trade.qty ?? '—'}</TableCell>
                                   </TableRow>
                                 ))}

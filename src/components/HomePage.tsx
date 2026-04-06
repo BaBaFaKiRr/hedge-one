@@ -7,14 +7,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
+import { formatInr } from '../utils/currency';
 
 interface Trade {
   id: number;
-  user: string | null;
   stock_option: string | null;
-  position: string | null;
-  price: number | null;
-  date_time: string | null;
+  entry_at: string;
+  entry_price: number | null;
+  entry_side: string;
+  exit_at: string | null;
+  realized_pnl: number | null;
+  qty: number | null;
 }
 
 interface PythonLog {
@@ -49,9 +52,11 @@ export function HomePage() {
     try {
       const { data, error } = await supabase
         .from('trades')
-        .select('*')
-        .eq('user', user.id)
-        .order('date_time', { ascending: false });
+        .select(
+          'id, stock_option, entry_at, entry_price, entry_side, exit_at, realized_pnl, qty'
+        )
+        .eq('user_id', user.id)
+        .order('entry_at', { ascending: false });
 
       if (error) throw error;
 
@@ -102,100 +107,37 @@ export function HomePage() {
     setCurrentPage(1);
   }, [trades.length]);
 
-  // Calculate Performance and Win Rate from trades (This month's performance)
   const { performance, winRate } = useMemo(() => {
     const now = new Date();
     const currentMonth = now.getMonth();
     const currentYear = now.getFullYear();
 
-    // Filter trades for current month only
     const currentMonthTrades = trades.filter((trade) => {
-      if (!trade.date_time) return false;
-      const tradeDate = new Date(trade.date_time);
+      if (!trade.entry_at) return false;
+      const tradeDate = new Date(trade.entry_at);
       return tradeDate.getMonth() === currentMonth && tradeDate.getFullYear() === currentYear;
     });
 
-    if (currentMonthTrades.length === 0) {
+    const closed = currentMonthTrades.filter(
+      (t) => t.realized_pnl != null && t.exit_at != null
+    );
+
+    if (closed.length === 0) {
       return { performance: { pnl: 0, returnPercent: 0 }, winRate: 0 };
     }
 
-    // Group trades by stock_option and match Entry/Buy with Exit/Sell/CUTOFF
-    // Only complete pairs (entry + exit) are considered - incomplete trades are ignored
-    const tradePairs: Array<{ buy: Trade; sell: Trade }> = [];
-    const stockGroups = new Map<string, Trade[]>();
-
-    // Group trades by stock_option
-    currentMonthTrades.forEach((trade) => {
-      if (!trade.stock_option) return;
-      const key = trade.stock_option;
-      if (!stockGroups.has(key)) {
-        stockGroups.set(key, []);
-      }
-      stockGroups.get(key)!.push(trade);
-    });
-
-    // Match Buy/Entry with Sell/Exit/CUTOFF for each stock
-    // Only complete pairs are added to tradePairs - incomplete trades (entry without exit) are ignored
-    stockGroups.forEach((stockTrades) => {
-      // Sort by date_time to ensure chronological order
-      stockTrades.sort((a, b) => {
-        if (!a.date_time || !b.date_time) return 0;
-        return new Date(a.date_time).getTime() - new Date(b.date_time).getTime();
-      });
-
-      let buyTrade: Trade | null = null;
-      stockTrades.forEach((trade) => {
-        const position = (trade.position || '').toLowerCase();
-        const isEntry = position === 'entry' || position === 'buy';
-        const isExit = position === 'exit' || position === 'sell' || position === 'cutoff';
-
-        if (isEntry && !buyTrade) {
-          buyTrade = trade;
-        } else if (isExit && buyTrade) {
-          // Only add complete pairs (both entry and exit exist)
-          tradePairs.push({ buy: buyTrade, sell: trade });
-          buyTrade = null;
-        } else if (isEntry && buyTrade) {
-          // If there's a new entry before the previous one was closed, ignore the previous entry
-          // This handles cases where multiple entries occur before an exit
-          buyTrade = trade;
-        }
-      });
-      // Note: Any remaining buyTrade without an exit is ignored (incomplete trade)
-    });
-
-    // Calculate total PnL and return percentage from complete trade pairs only
-    let totalPnL = 0;
-    let totalBuyValue = 0;
-    let winningTrades = 0;
-    let totalTrades = 0;
-
-    tradePairs.forEach(({ buy, sell }) => {
-      // Ensure both prices exist (additional safety check)
-      if (!buy.price || !sell.price) return;
-
-      const buyPrice = buy.price;
-      const sellPrice = sell.price;
-      const pnl = sellPrice - buyPrice;
-      const buyValue = buyPrice;
-
-      totalPnL += pnl;
-      totalBuyValue += buyValue;
-      totalTrades++;
-
-      if (pnl > 0) {
-        winningTrades++;
-      }
-    });
-
-    const returnPercent = totalBuyValue > 0 ? (totalPnL / totalBuyValue) * 100 : 0;
-    const winRatePercent = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    const totalPnL = closed.reduce((s, t) => s + (t.realized_pnl ?? 0), 0);
+    const notional = closed.reduce((s, t) => {
+      const q = t.qty ?? 1;
+      const ep = t.entry_price ?? 0;
+      return s + Math.abs(ep * q);
+    }, 0);
+    const returnPercent = notional > 0 ? (totalPnL / notional) * 100 : 0;
+    const wins = closed.filter((t) => (t.realized_pnl ?? 0) > 0).length;
+    const winRatePercent = (wins / closed.length) * 100;
 
     return {
-      performance: {
-        pnl: totalPnL,
-        returnPercent,
-      },
+      performance: { pnl: totalPnL, returnPercent },
       winRate: winRatePercent,
     };
   }, [trades]);
@@ -207,7 +149,7 @@ export function HomePage() {
         ? `+${performance.returnPercent.toFixed(2)}%` 
         : `${performance.returnPercent.toFixed(2)}%`,
       icon: BarChart3,
-      description: `PnL: ${performance.pnl >= 0 ? '+' : ''}$${performance.pnl.toFixed(2)} | This month's`,
+      description: `PnL: ${performance.pnl >= 0 ? '+' : ''}${formatInr(performance.pnl)} | This month's`,
       color: performance.returnPercent >= 0 ? 'text-green-600' : 'text-red-600',
       bgColor: performance.returnPercent >= 0 ? 'bg-green-50' : 'bg-red-50',
     },
@@ -387,21 +329,19 @@ export function HomePage() {
                   <div key={trade.id} className="mobile-trade-card">
                     <div className="mobile-trade-header">
                       <span className="mobile-trade-stock">{trade.stock_option ?? '—'}</span>
-                      <span className="mobile-trade-position">{trade.position ?? '—'}</span>
+                      <span className="mobile-trade-position">{trade.entry_side ?? '—'}</span>
                     </div>
                     <div className="mobile-trade-row">
-                      <span className="mobile-trade-label">Price:</span>
+                      <span className="mobile-trade-label">P&amp;L:</span>
                       <span className="mobile-trade-value">
-                        {trade.price !== null && trade.price !== undefined
-                          ? `$${trade.price.toFixed(2)}`
-                          : '—'}
+                        {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
                       </span>
                     </div>
                     <div className="mobile-trade-row">
                       <span className="mobile-trade-label">Date:</span>
                       <span className="mobile-trade-value">
-                        {trade.date_time
-                          ? new Date(trade.date_time).toLocaleString()
+                        {trade.entry_at
+                          ? new Date(trade.entry_at).toLocaleString()
                           : '—'}
                       </span>
                     </div>
@@ -414,24 +354,22 @@ export function HomePage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Stock / Option</TableHead>
-                      <TableHead>Position</TableHead>
-                      <TableHead>Price</TableHead>
-                      <TableHead>Date / Time</TableHead>
+                      <TableHead>Side</TableHead>
+                      <TableHead>P&amp;L</TableHead>
+                      <TableHead>Entry time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {paginatedTrades.map((trade) => (
                       <TableRow key={trade.id}>
                         <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                        <TableCell className="capitalize">{trade.position ?? '—'}</TableCell>
+                        <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
                         <TableCell>
-                          {trade.price !== null && trade.price !== undefined
-                            ? `$${trade.price.toFixed(2)}`
-                            : '—'}
+                          {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
                         </TableCell>
                         <TableCell>
-                          {trade.date_time
-                            ? new Date(trade.date_time).toLocaleString()
+                          {trade.entry_at
+                            ? new Date(trade.entry_at).toLocaleString()
                             : '—'}
                         </TableCell>
                       </TableRow>
