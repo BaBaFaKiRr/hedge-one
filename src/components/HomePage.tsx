@@ -8,17 +8,11 @@ import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import { formatInr } from '../utils/currency';
+import { useLiveTradePrices } from '../hooks/useLiveTradePrices';
+import { getLiveTradeSnapshot, strategySupportsLivePnl } from '../utils/liveTradeMapping';
+import type { BaseTradeRow } from '../types/trades';
 
-interface Trade {
-  id: number;
-  stock_option: string | null;
-  entry_at: string;
-  entry_price: number | null;
-  entry_side: string;
-  exit_at: string | null;
-  realized_pnl: number | null;
-  qty: number | null;
-}
+interface Trade extends BaseTradeRow {}
 
 interface PythonLog {
   id: number;
@@ -53,7 +47,7 @@ export function HomePage() {
       const { data, error } = await supabase
         .from('trades')
         .select(
-          'id, stock_option, entry_at, entry_price, entry_side, exit_at, realized_pnl, qty'
+          'id, stock_option, strategy, entry_at, entry_price, entry_side, exit_at, realized_pnl, qty'
         )
         .eq('user_id', user.id)
         .order('entry_at', { ascending: false });
@@ -101,6 +95,7 @@ export function HomePage() {
   const startIndex = (currentPage - 1) * tradesPerPage;
   const endIndex = startIndex + tradesPerPage;
   const paginatedTrades = trades.slice(startIndex, endIndex);
+  const { quotesByKey } = useLiveTradePrices(paginatedTrades);
 
   // Reset to page 1 when trades change
   useEffect(() => {
@@ -325,28 +320,41 @@ export function HomePage() {
             <>
               {/* Mobile Card View - Only visible on mobile */}
               <div className="mobile-trades-cards">
-                {paginatedTrades.map((trade) => (
-                  <div key={trade.id} className="mobile-trade-card">
-                    <div className="mobile-trade-header">
-                      <span className="mobile-trade-stock">{trade.stock_option ?? '—'}</span>
-                      <span className="mobile-trade-position">{trade.entry_side ?? '—'}</span>
+                {paginatedTrades.map((trade) => {
+                  const live = getLiveTradeSnapshot(trade, quotesByKey);
+                  const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
+                  const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
+                  return (
+                    <div key={trade.id} className="mobile-trade-card">
+                      <div className="mobile-trade-header">
+                        <span className="mobile-trade-stock">{trade.stock_option ?? '—'}</span>
+                        <span className="mobile-trade-position">{trade.entry_side ?? '—'}</span>
+                      </div>
+                      {!trade.exit_at && (
+                        <div className="mobile-trade-row">
+                          <span className="mobile-trade-label">LTP:</span>
+                          <span className="mobile-trade-value">
+                            {supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}
+                          </span>
+                        </div>
+                      )}
+                      <div className="mobile-trade-row">
+                        <span className="mobile-trade-label">P&amp;L:</span>
+                        <span className="mobile-trade-value">
+                          {pnlValue == null ? 'Open' : formatInr(pnlValue)}
+                        </span>
+                      </div>
+                      <div className="mobile-trade-row">
+                        <span className="mobile-trade-label">Date:</span>
+                        <span className="mobile-trade-value">
+                          {trade.entry_at
+                            ? new Date(trade.entry_at).toLocaleString()
+                            : '—'}
+                        </span>
+                      </div>
                     </div>
-                    <div className="mobile-trade-row">
-                      <span className="mobile-trade-label">P&amp;L:</span>
-                      <span className="mobile-trade-value">
-                        {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
-                      </span>
-                    </div>
-                    <div className="mobile-trade-row">
-                      <span className="mobile-trade-label">Date:</span>
-                      <span className="mobile-trade-value">
-                        {trade.entry_at
-                          ? new Date(trade.entry_at).toLocaleString()
-                          : '—'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {/* Desktop Table View - Only visible on desktop */}
               <div className="desktop-trades-table">
@@ -355,25 +363,32 @@ export function HomePage() {
                     <TableRow>
                       <TableHead>Stock / Option</TableHead>
                       <TableHead>Side</TableHead>
+                      <TableHead>LTP</TableHead>
                       <TableHead>P&amp;L</TableHead>
                       <TableHead>Entry time</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginatedTrades.map((trade) => (
-                      <TableRow key={trade.id}>
-                        <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                        <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
-                        <TableCell>
-                          {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
-                        </TableCell>
-                        <TableCell>
-                          {trade.entry_at
-                            ? new Date(trade.entry_at).toLocaleString()
-                            : '—'}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {paginatedTrades.map((trade) => {
+                      const live = getLiveTradeSnapshot(trade, quotesByKey);
+                      const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
+                      const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
+                      return (
+                        <TableRow key={trade.id}>
+                          <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                          <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
+                          <TableCell>{trade.exit_at ? '—' : supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}</TableCell>
+                          <TableCell>
+                            {pnlValue == null ? 'Open' : formatInr(pnlValue)}
+                          </TableCell>
+                          <TableCell>
+                            {trade.entry_at
+                              ? new Date(trade.entry_at).toLocaleString()
+                              : '—'}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

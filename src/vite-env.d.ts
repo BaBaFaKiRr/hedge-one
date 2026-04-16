@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_NODE_BACKEND_URL?: string
   readonly VITE_RESTART_URL?: string
   readonly VITE_TASK_RESTART_URL?: string
+  readonly VITE_INDICATOR_STREAM_WS_URL?: string
   // Add other env variables as needed
   [key: string]: any
 }

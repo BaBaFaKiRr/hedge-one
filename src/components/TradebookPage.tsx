@@ -15,19 +15,13 @@ import {
 import { toast } from 'sonner';
 import { BarChart3, RotateCcw } from 'lucide-react';
 import { formatInr } from '../utils/currency';
+import { useLiveTradePrices } from '../hooks/useLiveTradePrices';
+import { getLiveTradeSnapshot, strategySupportsLivePnl } from '../utils/liveTradeMapping';
+import type { BaseTradeRow } from '../types/trades';
 
-export interface TradebookRow {
-  id: number;
-  stock_option: string | null;
-  strategy: string;
-  qty: number | null;
-  entry_side: string;
-  entry_price: number | null;
-  entry_at: string;
+export interface TradebookRow extends BaseTradeRow {
   exit_side: string | null;
   exit_price: number | null;
-  exit_at: string | null;
-  realized_pnl: number | null;
   dry_run: boolean;
   broker_name: string | null;
   broker_platform: string | null;
@@ -133,6 +127,8 @@ export function TradebookPage({ onOpenTrade }: TradebookPageProps) {
     });
   }, [trades, strategyFilter, dateRangeFilter]);
 
+  const { quotesByKey } = useLiveTradePrices(filteredTrades);
+
   const formatEntryExitSummary = (t: TradebookRow): string => {
     const en = t.entry_side || '';
     const ex = t.exit_side ?? null;
@@ -228,51 +224,60 @@ export function TradebookPage({ onOpenTrade }: TradebookPageProps) {
                     <TableHead>Token</TableHead>
                     <TableHead>Broker</TableHead>
                     <TableHead>Entry → Exit</TableHead>
+                    <TableHead>LTP</TableHead>
                     <TableHead>P&amp;L</TableHead>
                     <TableHead>Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredTrades.map((trade, index) => (
-                    <TableRow
-                      key={trade.id}
-                      className={onOpenTrade ? 'cursor-pointer hover:bg-slate-50' : undefined}
-                      onClick={() => onOpenTrade?.(trade.id)}
-                      role={onOpenTrade ? 'button' : undefined}
-                    >
-                      <TableCell className="font-medium">{index + 1}</TableCell>
-                      <TableCell>{strategyLabel(trade.strategy)}</TableCell>
-                      <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                      <TableCell className="text-sm">
-                        {[trade.broker_name, trade.broker_platform].filter(Boolean).join(' · ') || '—'}
-                      </TableCell>
-                      <TableCell className="text-sm font-mono">{formatEntryExitSummary(trade)}</TableCell>
-                      <TableCell
-                        className={
-                          trade.realized_pnl == null
-                            ? 'text-slate-500'
-                            : trade.realized_pnl >= 0
-                              ? 'text-green-600 font-medium'
-                              : 'text-red-600 font-medium'
-                        }
+                  {filteredTrades.map((trade, index) => {
+                    const live = getLiveTradeSnapshot(trade, quotesByKey);
+                    const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
+                    const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
+                    return (
+                      <TableRow
+                        key={trade.id}
+                        className={onOpenTrade ? 'cursor-pointer hover:bg-slate-50' : undefined}
+                        onClick={() => onOpenTrade?.(trade.id)}
+                        role={onOpenTrade ? 'button' : undefined}
                       >
-                        {trade.realized_pnl == null ? 'Open' : formatInr(trade.realized_pnl)}
-                      </TableCell>
-                      <TableCell className="text-sm whitespace-nowrap">
-                        {trade.entry_at
-                          ? new Date(trade.entry_at).toLocaleString('en-IN', {
-                              year: 'numeric',
-                              month: '2-digit',
-                              day: '2-digit',
-                              hour12: false,
-                            })
-                          : '—'}
-                        {trade.dry_run && (
-                          <span className="ml-2 text-xs text-amber-700">(paper)</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        <TableCell className="font-medium">{index + 1}</TableCell>
+                        <TableCell>{strategyLabel(trade.strategy)}</TableCell>
+                        <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                        <TableCell className="text-sm">
+                          {[trade.broker_name, trade.broker_platform].filter(Boolean).join(' · ') || '—'}
+                        </TableCell>
+                        <TableCell className="text-sm font-mono">{formatEntryExitSummary(trade)}</TableCell>
+                        <TableCell className="text-sm">
+                          {trade.exit_at ? '—' : supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}
+                        </TableCell>
+                        <TableCell
+                          className={
+                            pnlValue == null
+                              ? 'text-slate-500'
+                              : pnlValue >= 0
+                                ? 'text-green-600 font-medium'
+                                : 'text-red-600 font-medium'
+                          }
+                        >
+                          {pnlValue == null ? 'Open' : formatInr(pnlValue)}
+                        </TableCell>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          {trade.entry_at
+                            ? new Date(trade.entry_at).toLocaleString('en-IN', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour12: false,
+                              })
+                            : '—'}
+                          {trade.dry_run && (
+                            <span className="ml-2 text-xs text-amber-700">(paper)</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

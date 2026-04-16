@@ -19,6 +19,9 @@ import { createClient } from '@supabase/supabase-js';
 import * as Dialog from "@radix-ui/react-dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import './global.css';
+import { useLiveTradePrices } from '../hooks/useLiveTradePrices';
+import { getLiveTradeSnapshot, strategySupportsLivePnl } from '../utils/liveTradeMapping';
+import type { BaseTradeRow } from '../types/trades';
 
 type Nullable<T> = T | null;
 
@@ -74,16 +77,9 @@ interface EditForm {
   dry_run: boolean;
 }
 
-interface StrategyTrade {
-  id: number;
-  stock_option: string | null;
-  entry_at: string;
-  entry_side: string;
-  entry_price: number | null;
+interface StrategyTrade extends BaseTradeRow {
   exit_at: string | null;
   exit_price: number | null;
-  realized_pnl: number | null;
-  qty: number | null;
 }
 
 export function PortfolioPage() {
@@ -541,7 +537,7 @@ export function PortfolioPage() {
       const { data, error } = await supabase
         .from('trades')
         .select(
-          'id, stock_option, entry_at, entry_side, entry_price, exit_at, exit_price, realized_pnl, qty'
+          'id, stock_option, strategy, entry_at, entry_side, entry_price, exit_at, exit_price, realized_pnl, qty'
         )
         .eq('user_id', user.id)
         .eq('strategy', strategy.strategy_id)
@@ -590,6 +586,9 @@ export function PortfolioPage() {
     const strategyTrades = trades[strategyId] || [];
     return Math.ceil(strategyTrades.length / tradesPerPage);
   };
+
+  const allLoadedTrades = useMemo(() => Object.values(trades).flat(), [trades]);
+  const { quotesByKey } = useLiveTradePrices(allLoadedTrades);
 
   const formatDateTime = (dateTime: string | null) => {
     if (!dateTime) return '—';
@@ -926,43 +925,46 @@ export function PortfolioPage() {
                                   <TableHead>Side</TableHead>
                                   <TableHead>Entry</TableHead>
                                   <TableHead>Exit</TableHead>
+                                  <TableHead>LTP</TableHead>
                                   <TableHead>P&amp;L</TableHead>
                                   <TableHead>Qty</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {getPaginatedTrades(strategy.id).map((trade) => (
-                                  <TableRow key={trade.id}>
-                                    <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                                    <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
-                                    <TableCell>
-                                      {trade.entry_price != null
-                                        ? formatInr(trade.entry_price)
-                                        : '—'}
-                                      <span className="text-slate-500 text-xs block">
-                                        {formatDateTime(trade.entry_at)}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell>
-                                      {trade.exit_at == null
-                                        ? 'Open'
-                                        : trade.exit_price != null
-                                          ? formatInr(trade.exit_price)
+                                {getPaginatedTrades(strategy.id).map((trade) => {
+                                  const live = getLiveTradeSnapshot(trade, quotesByKey);
+                                  const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
+                                  const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
+                                  return (
+                                    <TableRow key={trade.id}>
+                                      <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                                      <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
+                                      <TableCell>
+                                        {trade.entry_price != null
+                                          ? formatInr(trade.entry_price)
                                           : '—'}
-                                      {trade.exit_at && (
                                         <span className="text-slate-500 text-xs block">
-                                          {formatDateTime(trade.exit_at)}
+                                          {formatDateTime(trade.entry_at)}
                                         </span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      {trade.realized_pnl == null
-                                        ? '—'
-                                        : formatInr(trade.realized_pnl)}
-                                    </TableCell>
-                                    <TableCell>{trade.qty ?? '—'}</TableCell>
-                                  </TableRow>
-                                ))}
+                                      </TableCell>
+                                      <TableCell>
+                                        {trade.exit_at == null
+                                          ? 'Open'
+                                          : trade.exit_price != null
+                                            ? formatInr(trade.exit_price)
+                                            : '—'}
+                                        {trade.exit_at && (
+                                          <span className="text-slate-500 text-xs block">
+                                            {formatDateTime(trade.exit_at)}
+                                          </span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>{trade.exit_at ? '—' : supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}</TableCell>
+                                      <TableCell>{pnlValue == null ? '—' : formatInr(pnlValue)}</TableCell>
+                                      <TableCell>{trade.qty ?? '—'}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
                               </TableBody>
                             </Table>
                           </div>
@@ -1176,43 +1178,46 @@ export function PortfolioPage() {
                                   <TableHead>Side</TableHead>
                                   <TableHead>Entry</TableHead>
                                   <TableHead>Exit</TableHead>
+                                  <TableHead>LTP</TableHead>
                                   <TableHead>P&amp;L</TableHead>
                                   <TableHead>Qty</TableHead>
                                 </TableRow>
                               </TableHeader>
                               <TableBody>
-                                {getPaginatedTrades(strategy.id).map((trade) => (
-                                  <TableRow key={trade.id}>
-                                    <TableCell>{trade.stock_option ?? '—'}</TableCell>
-                                    <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
-                                    <TableCell>
-                                      {trade.entry_price != null
-                                        ? formatInr(trade.entry_price)
-                                        : '—'}
-                                      <span className="text-slate-500 text-xs block">
-                                        {formatDateTime(trade.entry_at)}
-                                      </span>
-                                    </TableCell>
-                                    <TableCell>
-                                      {trade.exit_at == null
-                                        ? 'Open'
-                                        : trade.exit_price != null
-                                          ? formatInr(trade.exit_price)
+                                {getPaginatedTrades(strategy.id).map((trade) => {
+                                  const live = getLiveTradeSnapshot(trade, quotesByKey);
+                                  const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
+                                  const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
+                                  return (
+                                    <TableRow key={trade.id}>
+                                      <TableCell>{trade.stock_option ?? '—'}</TableCell>
+                                      <TableCell className="capitalize">{trade.entry_side ?? '—'}</TableCell>
+                                      <TableCell>
+                                        {trade.entry_price != null
+                                          ? formatInr(trade.entry_price)
                                           : '—'}
-                                      {trade.exit_at && (
                                         <span className="text-slate-500 text-xs block">
-                                          {formatDateTime(trade.exit_at)}
+                                          {formatDateTime(trade.entry_at)}
                                         </span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      {trade.realized_pnl == null
-                                        ? '—'
-                                        : formatInr(trade.realized_pnl)}
-                                    </TableCell>
-                                    <TableCell>{trade.qty ?? '—'}</TableCell>
-                                  </TableRow>
-                                ))}
+                                      </TableCell>
+                                      <TableCell>
+                                        {trade.exit_at == null
+                                          ? 'Open'
+                                          : trade.exit_price != null
+                                            ? formatInr(trade.exit_price)
+                                            : '—'}
+                                        {trade.exit_at && (
+                                          <span className="text-slate-500 text-xs block">
+                                            {formatDateTime(trade.exit_at)}
+                                          </span>
+                                        )}
+                                      </TableCell>
+                                      <TableCell>{trade.exit_at ? '—' : supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}</TableCell>
+                                      <TableCell>{pnlValue == null ? '—' : formatInr(pnlValue)}</TableCell>
+                                      <TableCell>{trade.qty ?? '—'}</TableCell>
+                                    </TableRow>
+                                  );
+                                })}
                               </TableBody>
                             </Table>
                           </div>

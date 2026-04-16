@@ -7,23 +7,17 @@ import { useAuth } from './AuthContext';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 import { formatInr } from '../utils/currency';
+import { useLiveTradePrices } from '../hooks/useLiveTradePrices';
+import { getLiveTradeSnapshot, strategySupportsLivePnl } from '../utils/liveTradeMapping';
+import type { BaseTradeRow } from '../types/trades';
 
-export interface TradeDetailRow {
-  id: number;
+export interface TradeDetailRow extends BaseTradeRow {
   user_id: string;
-  stock_option: string | null;
-  strategy: string;
-  qty: number | null;
-  entry_side: string;
-  entry_price: number | null;
   entry_order_id: string | null;
-  entry_at: string;
   exit_side: string | null;
   exit_price: number | null;
   exit_order_id: string | null;
-  exit_at: string | null;
   exit_reason: string | null;
-  realized_pnl: number | null;
   dry_run: boolean;
   broker_name: string | null;
   broker_platform: string | null;
@@ -103,6 +97,12 @@ export function TradeDetailPage({ tradeId, onBack }: TradeDetailPageProps) {
     load();
   }, [load]);
 
+  const liveTrades = useMemo(() => (trade ? [trade] : []), [trade]);
+  const { quotesByKey } = useLiveTradePrices(liveTrades);
+  const live = trade ? getLiveTradeSnapshot(trade, quotesByKey) : null;
+  const displayedPnl = trade?.realized_pnl ?? live?.unrealizedPnl ?? null;
+  const supportsLivePnl = strategySupportsLivePnl(trade?.strategy);
+
   if (!user?.id) {
     return (
       <div className="flex items-center justify-center h-64 text-slate-600">Please sign in.</div>
@@ -174,7 +174,16 @@ export function TradeDetailPage({ tradeId, onBack }: TradeDetailPageProps) {
             <div>
               <h3 className="font-medium text-slate-800 mb-2">Exit</h3>
               {!trade.exit_at ? (
-                <p className="text-slate-500">Open — exit not recorded yet.</p>
+                <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <dt className="text-slate-500">Status</dt>
+                    <dd className="text-slate-500">Open — exit not recorded yet.</dd>
+                  </div>
+                  <div>
+                    <dt className="text-slate-500">Live LTP</dt>
+                    <dd>{supportsLivePnl && live?.hasLivePrice ? formatInr(live.ltp) : '—'}</dd>
+                  </div>
+                </dl>
               ) : (
                 <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
@@ -203,17 +212,19 @@ export function TradeDetailPage({ tradeId, onBack }: TradeDetailPageProps) {
 
             <div className="pt-2 border-t border-slate-200">
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">P&amp;L (realized)</span>
+                <span className="text-slate-600">
+                  {trade.realized_pnl == null && supportsLivePnl ? 'P&L (live)' : 'P&L (realized)'}
+                </span>
                 <span
                   className={`text-lg font-semibold ${
-                    trade.realized_pnl == null
+                    displayedPnl == null
                       ? 'text-slate-500'
-                      : trade.realized_pnl >= 0
+                      : displayedPnl >= 0
                         ? 'text-green-600'
                         : 'text-red-600'
                   }`}
                 >
-                  {trade.realized_pnl == null ? '—' : formatInr(trade.realized_pnl)}
+                  {displayedPnl == null ? (trade.realized_pnl == null ? 'Open' : '—') : formatInr(displayedPnl)}
                 </span>
               </div>
             </div>
