@@ -136,12 +136,12 @@ export function PositionsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-        <Card className="min-h-[640px] overflow-hidden">
+      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
+        <Card className="min-h-[640px] overflow-hidden lg:h-[calc(100vh-13rem)]">
           <CardHeader className="border-b border-slate-200 pb-4">
             <CardTitle>Today&apos;s Positions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 p-0">
+          <CardContent className="space-y-4 p-0 lg:h-[calc(100%-4.5rem)] lg:overflow-y-auto">
             {trades.length === 0 ? (
               <div className="p-6 text-sm text-slate-500">
                 {isLoading ? 'Loading today’s positions...' : 'No trades found for today.'}
@@ -236,18 +236,18 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-[640px]">
+        <Card className="min-h-[640px] lg:h-[calc(100vh-13rem)]">
           <CardHeader>
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 lg:flex lg:h-[calc(100%-4.5rem)] lg:flex-col">
             {!selectedTrade ? (
               <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500">
                 Select a position to load its chart.
               </div>
             ) : (
               <>
-                <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4">
+                  <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4">
                   <div>
                     <div className="text-xs uppercase tracking-wide text-slate-500">Security</div>
                     <div className="mt-1 font-medium text-slate-900">{selectedTrade.stock_option ?? '—'}</div>
@@ -267,9 +267,11 @@ export function PositionsPage() {
                 </div>
 
                 {selectedChartSymbol ? (
-                  <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
+                  <div className="lg:min-h-0 lg:flex-1">
+                    <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
+                  </div>
                 ) : (
-                  <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                  <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 lg:min-h-0 lg:flex-1">
                     Chart not available for this security. This mainly applies to NIFTY options in `nifty_30min_breakout` and stock futures in `stock_75min_fut`.
                   </div>
                 )}
