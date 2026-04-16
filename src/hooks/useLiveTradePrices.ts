@@ -1,16 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BaseTradeRow, LiveTradeQuote } from '../types/trades';
+import { getIndicatorStreamWsUrl } from '../utils/indicatorStream';
 import {
   getLiveTradeQuoteKey,
   getLiveTradeSubscription,
   getLiveTradeSubscriptionKey,
 } from '../utils/liveTradeMapping';
-
-const DEFAULT_WS_URL = 'wss://indicatorstreaming-production.up.railway.app/ws';
-
-function getWsUrl(): string {
-  return import.meta.env.VITE_INDICATOR_STREAM_WS_URL || DEFAULT_WS_URL;
-}
 
 function buildSubscriptions(trades: BaseTradeRow[]) {
   const unique = new Map<string, { symbol: string; strategy: string }>();
@@ -83,7 +78,7 @@ export function useLiveTradePrices(trades: BaseTradeRow[]) {
     }
 
     setConnectionState('connecting');
-    const ws = new WebSocket(getWsUrl());
+    const ws = new WebSocket(getIndicatorStreamWsUrl());
     wsRef.current = ws;
 
     ws.onopen = () => {

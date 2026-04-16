@@ -11,6 +11,7 @@ import { StrategyDetailPage } from './components/StrategyDetailPage';
 import { PortfolioPage } from './components/PortfolioPage';
 import { TradebookPage } from './components/TradebookPage';
 import { TradeDetailPage } from './components/TradeDetailPage';
+import { PositionsPage } from './components/PositionsPage';
 import { Toaster } from './components/ui/sonner';
 
 type PageType =
@@ -19,6 +20,7 @@ type PageType =
   | 'telegram'
   | 'strategies'
   | 'portfolio'
+  | 'positions'
   | 'tradebook'
   | 'strategy-detail'
   | 'trade-detail';
@@ -85,6 +87,8 @@ function AppContent() {
         );
       case 'portfolio':
         return <PortfolioPage />;
+      case 'positions':
+        return <PositionsPage />;
       case 'tradebook':
         return (
           <TradebookPage
