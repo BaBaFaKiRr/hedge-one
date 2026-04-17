@@ -67,7 +67,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
             library_path: TRADINGVIEW_LIBRARY_PATH,
             locale: 'en',
             symbol: chartSymbol,
-            theme: 'Dark',
+            theme: 'light',
             timezone: 'Asia/Kolkata',
             disabled_features: ['use_localstorage_for_settings'],
             enabled_features: ['study_templates'],
@@ -77,6 +77,10 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
           w.onChartReady(() => {
             if (disposed) return;
+            // Autosize often measures before flex layout settles; nudge a layout pass.
+            requestAnimationFrame(() => {
+              if (!disposed) window.dispatchEvent(new Event('resize'));
+            });
             const chart = w.activeChart();
             if (!chart) return;
 
@@ -155,7 +159,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   return (
     <div
       id={containerId}
-      className="absolute inset-0 min-h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-950"
+      className="h-full min-h-[400px] w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
     />
   );
 }
