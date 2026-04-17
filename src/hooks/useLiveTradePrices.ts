@@ -100,7 +100,7 @@ export function useLiveTradePrices(trades: BaseTradeRow[]) {
         if (priceInr == null) {
           return;
         }
-        const symbol = String(data.symbol);
+        const symbol = String(data.symbol).trim().toUpperCase();
         const inferredStrategy = inferStrategyFromTick(data, strategiesBySymbol[symbol] || []);
         if (!inferredStrategy) return;
         const quote: LiveTradeQuote = {

@@ -122,6 +122,15 @@ export function PositionsPage() {
       trades: grouped,
     }));
   }, [trades]);
+  const totalDayPnl = useMemo(() => {
+    return trades.reduce((sum, trade) => {
+      if (trade.realized_pnl != null) {
+        return sum + trade.realized_pnl;
+      }
+      const live = getLiveTradeSnapshot(trade, quotesByKey);
+      return sum + (live.unrealizedPnl ?? 0);
+    }, 0);
+  }, [quotesByKey, trades]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 pb-2">
@@ -142,7 +151,16 @@ export function PositionsPage() {
       >
         <Card className="flex h-full min-h-0 basis-2/5 shrink flex-col overflow-hidden rounded-none border-0 border-r border-slate-200 shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
-            <CardTitle>Today&apos;s Positions</CardTitle>
+            <div className="flex items-center justify-between gap-3">
+              <CardTitle>Today&apos;s Positions</CardTitle>
+              <div
+                className={`rounded-md px-2.5 py-1 text-sm font-semibold ${
+                  totalDayPnl >= 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+                }`}
+              >
+                Total P&amp;L: {formatInr(totalDayPnl)}
+              </div>
+            </div>
           </CardHeader>
           <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-0">
             {trades.length === 0 ? (
