@@ -1,6 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { BaseTradeRow } from '../types/trades';
 import { createTradingViewDatafeed } from '../utils/tradingViewDatafeed';
+
+/** Matches `hedge-one/public/charting_library/charting_library/` (nested package folder). */
+const TRADINGVIEW_SCRIPT = '/charting_library/charting_library/charting_library.js';
+const TRADINGVIEW_LIBRARY_PATH = '/charting_library/charting_library/';
 
 interface TradingViewPositionChartProps {
   chartSymbol: string;
@@ -23,7 +27,7 @@ function loadTradingViewLibrary(): Promise<void> {
     }
 
     const script = document.createElement('script');
-    script.src = '/charting_library/charting_library.js';
+    script.src = TRADINGVIEW_SCRIPT;
     script.async = true;
     script.dataset.tradingviewLibrary = 'true';
     script.onload = () => resolve();
@@ -33,7 +37,7 @@ function loadTradingViewLibrary(): Promise<void> {
 }
 
 export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPositionChartProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const containerId = `tv-pos-${trade.id}`;
   const [loadError, setLoadError] = useState<string | null>(null);
   const datafeed = useMemo(() => createTradingViewDatafeed(), []);
 
@@ -45,14 +49,14 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
     loadTradingViewLibrary()
       .then(() => {
-        if (disposed || !containerRef.current || !window.TradingView?.widget) return;
+        if (disposed || !window.TradingView?.widget) return;
 
         widget = new window.TradingView.widget({
           autosize: true,
-          container: containerRef.current,
+          container_id: containerId,
           datafeed,
           interval: '5',
-          library_path: '/charting_library/',
+          library_path: TRADINGVIEW_LIBRARY_PATH,
           locale: 'en',
           symbol: chartSymbol,
           theme: 'Dark',
@@ -105,7 +109,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
       disposed = true;
       widget?.remove();
     };
-  }, [chartSymbol, datafeed, trade]);
+  }, [chartSymbol, containerId, datafeed, trade]);
 
   if (loadError) {
     return (
@@ -115,5 +119,10 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
     );
   }
 
-  return <div ref={containerRef} className="h-full min-h-[520px] w-full overflow-hidden rounded-xl border border-slate-200" />;
+  return (
+    <div
+      id={containerId}
+      className="h-full min-h-[520px] w-full min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200"
+    />
+  );
 }

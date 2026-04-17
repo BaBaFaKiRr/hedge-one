@@ -136,12 +136,12 @@ export function PositionsPage() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[390px_minmax(0,1fr)]">
-        <Card className="min-h-[640px] overflow-hidden lg:h-[calc(100vh-13rem)]">
+      <div className="flex min-h-0 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-4">
+        <Card className="flex min-h-[min(640px,calc(100vh-13rem))] w-full shrink-0 flex-col overflow-hidden sm:h-[calc(100vh-13rem)] sm:w-[380px] sm:min-w-[380px]">
           <CardHeader className="border-b border-slate-200 pb-4">
             <CardTitle>Today&apos;s Positions</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 p-0 lg:h-[calc(100%-4.5rem)] lg:overflow-y-auto">
+          <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto p-0">
             {trades.length === 0 ? (
               <div className="p-6 text-sm text-slate-500">
                 {isLoading ? 'Loading today’s positions...' : 'No trades found for today.'}
@@ -236,11 +236,11 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="min-h-[640px] lg:h-[calc(100vh-13rem)]">
+        <Card className="flex min-h-[min(640px,calc(100vh-13rem))] min-w-0 flex-1 flex-col sm:h-[calc(100vh-13rem)]">
           <CardHeader>
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4 lg:flex lg:h-[calc(100%-4.5rem)] lg:flex-col">
+          <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
             {!selectedTrade ? (
               <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500">
                 Select a position to load its chart.
