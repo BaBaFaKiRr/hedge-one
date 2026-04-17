@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BaseTradeRow } from '../types/trades';
 import { createTradingViewDatafeed } from '../utils/tradingViewDatafeed';
 
@@ -36,14 +36,20 @@ function loadTradingViewLibrary(): Promise<void> {
   });
 }
 
+type TvWidget = {
+  remove(): void;
+  onChartReady(callback: () => void): void;
+  activeChart(): { createShape: (...args: any[]) => Promise<unknown> };
+};
+
 export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPositionChartProps) {
   const containerId = `tv-pos-${trade.id}`;
   const [loadError, setLoadError] = useState<string | null>(null);
   const datafeed = useMemo(() => createTradingViewDatafeed(), []);
+  const widgetRef = useRef<TvWidget | null>(null);
 
   useEffect(() => {
     let disposed = false;
-    let widget: { remove(): void; onChartReady(callback: () => void): void; activeChart(): { createShape: (...args: any[]) => Promise<unknown> } } | null = null;
 
     setLoadError(null);
 
@@ -51,67 +57,92 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
       .then(() => {
         if (disposed || !window.TradingView?.widget) return;
 
-        widget = new window.TradingView.widget({
-          autosize: true,
-          container_id: containerId,
-          datafeed,
-          interval: '5',
-          library_path: TRADINGVIEW_LIBRARY_PATH,
-          locale: 'en',
-          symbol: chartSymbol,
-          theme: 'Dark',
-          timezone: 'Asia/Kolkata',
-          disabled_features: ['use_localstorage_for_settings'],
-          enabled_features: ['study_templates'],
-          // Helps when parent uses flex/grid; autosize still needs a bounded box
-          fullscreen: false,
-        });
+        try {
+          const w = new window.TradingView.widget({
+            autosize: true,
+            /** Charting Library expects `container` (id string or HTMLElement), not `container_id`. */
+            container: containerId,
+            datafeed,
+            interval: '5',
+            library_path: TRADINGVIEW_LIBRARY_PATH,
+            locale: 'en',
+            symbol: chartSymbol,
+            theme: 'Dark',
+            timezone: 'Asia/Kolkata',
+            disabled_features: ['use_localstorage_for_settings'],
+            enabled_features: ['study_templates'],
+          }) as TvWidget;
 
-        widget.onChartReady(() => {
-          const chart = widget?.activeChart();
-          if (!chart) return;
+          widgetRef.current = w;
 
-          const entryTime = Math.floor(new Date(trade.entry_at).getTime() / 1000);
-          if (trade.entry_price != null) {
-            chart.createShape(
-              { time: entryTime, price: trade.entry_price },
-              {
-                shape: 'text',
-                lock: true,
-                disableSelection: true,
-                disableSave: true,
-                disableUndo: true,
-                text: `Entry ${trade.entry_side}`,
-                overrides: { color: '#22c55e' },
-              }
-            );
+          w.onChartReady(() => {
+            if (disposed) return;
+            const chart = w.activeChart();
+            if (!chart) return;
+
+            const entryTime = Math.floor(new Date(trade.entry_at).getTime() / 1000);
+            if (trade.entry_price != null) {
+              void chart
+                .createShape(
+                  { time: entryTime, price: trade.entry_price },
+                  {
+                    shape: 'text',
+                    lock: true,
+                    disableSelection: true,
+                    disableSave: true,
+                    disableUndo: true,
+                    text: `Entry ${trade.entry_side}`,
+                    overrides: { color: '#22c55e' },
+                  }
+                )
+                .catch(() => {});
+            }
+
+            if (trade.exit_at && trade.exit_price != null) {
+              void chart
+                .createShape(
+                  { time: Math.floor(new Date(trade.exit_at).getTime() / 1000), price: trade.exit_price },
+                  {
+                    shape: 'text',
+                    lock: true,
+                    disableSelection: true,
+                    disableSave: true,
+                    disableUndo: true,
+                    text: 'Exit',
+                    overrides: { color: '#ef4444' },
+                  }
+                )
+                .catch(() => {});
+            }
+          });
+        } catch (error) {
+          if (!disposed) {
+            setLoadError(error instanceof Error ? error.message : 'TradingView chart failed to initialize');
           }
-
-          if (trade.exit_at && trade.exit_price != null) {
-            chart.createShape(
-              { time: Math.floor(new Date(trade.exit_at).getTime() / 1000), price: trade.exit_price },
-              {
-                shape: 'text',
-                lock: true,
-                disableSelection: true,
-                disableSave: true,
-                disableUndo: true,
-                text: 'Exit',
-                overrides: { color: '#ef4444' },
-              }
-            );
-          }
-        });
+        }
       })
       .catch((error) => {
-        setLoadError(error instanceof Error ? error.message : 'TradingView chart failed to load');
+        if (!disposed) {
+          setLoadError(error instanceof Error ? error.message : 'TradingView chart failed to load');
+        }
       });
 
     return () => {
       disposed = true;
-      widget?.remove();
+      widgetRef.current?.remove();
+      widgetRef.current = null;
     };
-  }, [chartSymbol, containerId, datafeed, trade]);
+  }, [
+    chartSymbol,
+    containerId,
+    datafeed,
+    trade.id,
+    trade.entry_at,
+    trade.entry_price,
+    trade.entry_side,
+    trade.exit_at,
+    trade.exit_price,
+  ]);
 
   if (loadError) {
     return (

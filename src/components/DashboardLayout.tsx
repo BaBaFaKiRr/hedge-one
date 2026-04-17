@@ -72,7 +72,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         : currentPage;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="flex items-center justify-between h-16 px-4">
@@ -122,7 +122,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         </div>
       </header>
 
-      <div className="flex relative">
+      <div className="relative flex min-h-0 flex-1">
         {/* Mobile Overlay */}
         {isMobile && isSidebarOpen && (
           <div
