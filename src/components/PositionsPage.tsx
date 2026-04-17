@@ -136,11 +136,11 @@ export function PositionsPage() {
         </Button>
       </div>
 
-      {/* Broker split: flex row so list + chart sit side-by-side (grid was still stacking in some builds). Breakpoint 500px. */}
+      {/* Split: flex row at md+. No dvh on inner shell — cap height with vh once so flex + min-h-0 can size the chart. */}
       <div
-        className="flex min-h-0 w-full flex-1 flex-col gap-4 min-[500px]:h-[calc(100dvh-9rem)] min-[500px]:max-h-[calc(100dvh-9rem)] min-[500px]:flex-row min-[500px]:gap-0 min-[500px]:overflow-hidden min-[500px]:rounded-xl min-[500px]:border min-[500px]:border-slate-200 min-[500px]:bg-white min-[500px]:shadow-sm"
+        className="flex min-h-0 w-full flex-1 flex-col gap-4 md:max-h-[calc(100vh-8rem)] md:flex-row md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:border-slate-200 md:bg-white md:shadow-sm"
       >
-        <Card className="flex min-h-[360px] w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-none min-[500px]:h-full min-[500px]:max-h-full min-[500px]:min-h-0 min-[500px]:w-[280px] min-[500px]:min-w-[240px] min-[500px]:max-w-[min(360px,34%)] min-[500px]:rounded-none min-[500px]:border-0 min-[500px]:border-r min-[500px]:shadow-none">
+        <Card className="flex min-h-[320px] w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-none md:h-full md:max-h-full md:min-h-0 md:w-[320px] md:min-w-[280px] md:max-w-[360px] md:rounded-none md:border-0 md:border-r md:shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
             <CardTitle>Today&apos;s Positions</CardTitle>
           </CardHeader>
@@ -239,18 +239,18 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex min-h-[360px] min-w-0 flex-1 flex-col overflow-hidden border-slate-200 shadow-none min-[500px]:h-full min-[500px]:max-h-full min-[500px]:min-h-0 min-[500px]:rounded-none min-[500px]:border-0 min-[500px]:shadow-none">
+        <Card className="flex min-h-[320px] min-w-0 flex-1 flex-col overflow-hidden border-slate-200 shadow-none md:h-full md:max-h-full md:min-h-0 md:rounded-none md:border-0 md:shadow-none">
           <CardHeader className="shrink-0 border-b border-slate-100 pb-4">
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0 min-[500px]:px-4">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0 md:px-4">
             {!selectedTrade ? (
-              <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 min-[500px]:min-h-[480px]">
+              <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 md:min-h-[480px]">
                 Select a position to load its chart.
               </div>
             ) : (
               <>
-                <div className="grid shrink-0 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm min-[500px]:grid-cols-2 lg:grid-cols-4">
+                <div className="grid shrink-0 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm md:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Security</div>
                     <div className="mt-0.5 font-medium text-slate-900">{selectedTrade.stock_option ?? '—'}</div>
@@ -270,11 +270,11 @@ export function PositionsPage() {
                 </div>
 
                 {selectedChartSymbol ? (
-                  <div className="flex min-h-[420px] w-full min-w-0 flex-1 flex-col min-[500px]:min-h-0">
+                  <div className="flex min-h-0 w-full flex-1 flex-col">
                     <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
                   </div>
                 ) : (
-                  <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 min-[500px]:min-h-[480px]">
+                  <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 md:min-h-[480px]">
                     Chart not available for this security. This mainly applies to NIFTY options in `nifty_30min_breakout` and stock futures in `stock_75min_fut`.
                   </div>
                 )}
