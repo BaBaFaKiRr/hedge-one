@@ -72,7 +72,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         : currentPage;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex h-screen flex-col overflow-hidden bg-slate-50">
       {/* Top Navigation Bar */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="flex items-center justify-between h-16 px-4">
@@ -122,7 +122,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         </div>
       </header>
 
-      <div className="relative flex min-h-0 flex-1">
+      <div className="relative flex h-0 min-h-0 flex-1">
         {/* Mobile Overlay */}
         {isMobile && isSidebarOpen && (
           <div
@@ -137,8 +137,8 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
             className={`${
               isMobile
                 ? 'fixed left-0 top-16 bottom-0 z-50 w-64 shadow-xl'
-                : 'w-64'
-            } bg-white border-r border-slate-200 min-h-[calc(100vh-4rem)] transition-transform duration-300`}
+                : 'h-full w-64'
+            } bg-white border-r border-slate-200 transition-transform duration-300`}
           >
             <nav className="p-4 space-y-2">
               {menuItems.map((item) => {
@@ -164,7 +164,7 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
         )}
 
         {/* Main Content — flex column so pages (e.g. Positions) can use flex-1 / min-h-0 for split layouts */}
-        <main className={`flex min-h-0 flex-1 flex-col p-6 ${isMobile ? 'w-full' : ''}`}>
+        <main className={`flex min-h-0 flex-1 flex-col overflow-hidden p-6 ${isMobile ? 'w-full' : ''}`}>
           {children}
         </main>
       </div>
