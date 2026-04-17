@@ -136,11 +136,11 @@ export function PositionsPage() {
         </Button>
       </div>
 
-      {/* Split: flex row at md+. No dvh on inner shell — cap height with vh once so flex + min-h-0 can size the chart. */}
+      {/* Stable split shell: keep row layout so chart never drops under the positions list. */}
       <div
-        className="flex min-h-0 w-full flex-1 flex-col gap-4 md:flex-row md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:border-slate-200 md:bg-white md:shadow-sm"
+        className="flex min-h-0 w-full flex-1 flex-row items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
       >
-        <Card className="flex min-h-[320px] w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-none md:h-full md:max-h-full md:min-h-0 md:w-[320px] md:min-w-[280px] md:max-w-[360px] md:rounded-none md:border-0 md:border-r md:shadow-none">
+        <Card className="flex h-full min-h-0 basis-2/5 shrink flex-col overflow-hidden rounded-none border-0 border-r border-slate-200 shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
             <CardTitle>Today&apos;s Positions</CardTitle>
           </CardHeader>
@@ -239,11 +239,11 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex min-h-[320px] min-w-0 flex-1 flex-col overflow-hidden border-slate-200 shadow-none md:h-full md:max-h-full md:min-h-0 md:rounded-none md:border-0 md:shadow-none">
+        <Card className="flex h-full min-h-0 min-w-0 basis-3/5 flex-1 flex-col overflow-hidden rounded-none border-0 shadow-none">
           <CardHeader className="shrink-0 border-b border-slate-100 pb-4">
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0 md:px-4">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0">
             {!selectedTrade ? (
               <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 md:min-h-[480px]">
                 Select a position to load its chart.
