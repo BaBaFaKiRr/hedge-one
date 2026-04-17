@@ -1,4 +1,4 @@
-import { getIndicatorStreamHttpUrl, getIndicatorStreamWsUrl } from './indicatorStream';
+import { getIndicatorStreamHttpUrl, getIndicatorStreamWsUrl, indicatorStreamPaiseToInr } from './indicatorStream';
 
 type Bar = {
   time: number;
@@ -37,8 +37,7 @@ function bucketStartMs(timestampMs: number, resolution: string): number {
 }
 
 function normalizeRealtimePrice(raw: unknown): number | null {
-  const value = Number(raw);
-  return Number.isFinite(value) ? value / 100 : null;
+  return indicatorStreamPaiseToInr(raw);
 }
 
 async function fetchSymbolInfo(symbol: string) {

@@ -1,6 +1,18 @@
 const DEFAULT_WS_URL = 'wss://indicatorstreaming-production.up.railway.app/ws';
 const DEFAULT_HTTP_URL = 'https://indicatorstreaming-production.up.railway.app';
 
+/** SmartAPI / indicator_streaming tick prices are in paise; Supabase trades and UI use INR. */
+export const PAISE_PER_INR = 100;
+
+/**
+ * Convert a raw websocket tick price (paise) to rupees for display and P&L.
+ */
+export function indicatorStreamPaiseToInr(raw: unknown): number | null {
+  const value = Number(raw);
+  if (!Number.isFinite(value)) return null;
+  return value / PAISE_PER_INR;
+}
+
 export function getIndicatorStreamWsUrl(): string {
   return import.meta.env.VITE_INDICATOR_STREAM_WS_URL || DEFAULT_WS_URL;
 }

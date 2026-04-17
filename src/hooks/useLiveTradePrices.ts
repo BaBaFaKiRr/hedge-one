@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { BaseTradeRow, LiveTradeQuote } from '../types/trades';
-import { getIndicatorStreamWsUrl } from '../utils/indicatorStream';
+import { getIndicatorStreamWsUrl, indicatorStreamPaiseToInr } from '../utils/indicatorStream';
 import {
   getLiveTradeQuoteKey,
   getLiveTradeSubscription,
@@ -92,7 +92,12 @@ export function useLiveTradePrices(trades: BaseTradeRow[]) {
         if (data?.status === 'subscribed' || data?.status === 'pong' || data?.status === 'error') {
           return;
         }
-        if (!data?.symbol || data?.price == null) {
+        if (!data?.symbol) {
+          return;
+        }
+        const rawPrice = data.ltp ?? data.price;
+        const priceInr = indicatorStreamPaiseToInr(rawPrice);
+        if (priceInr == null) {
           return;
         }
         const symbol = String(data.symbol);
@@ -101,7 +106,7 @@ export function useLiveTradePrices(trades: BaseTradeRow[]) {
         const quote: LiveTradeQuote = {
           symbol,
           strategy: inferredStrategy,
-          price: Number(data.ltp ?? data.price),
+          price: priceInr,
           timestamp: typeof data.timestamp === 'string' ? data.timestamp : null,
         };
         setQuotesByKey((prev) => ({
