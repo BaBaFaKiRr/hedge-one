@@ -163,8 +163,8 @@ export function DashboardLayout({ children, currentPage, onNavigate }: Dashboard
           </aside>
         )}
 
-        {/* Main Content */}
-        <main className={`flex-1 p-6 ${isMobile ? 'w-full' : ''}`}>
+        {/* Main Content — flex column so pages (e.g. Positions) can use flex-1 / min-h-0 for split layouts */}
+        <main className={`flex min-h-0 flex-1 flex-col p-6 ${isMobile ? 'w-full' : ''}`}>
           {children}
         </main>
       </div>

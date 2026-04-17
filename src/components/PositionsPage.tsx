@@ -124,8 +124,8 @@ export function PositionsPage() {
   }, [trades]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
+    <div className="flex min-h-0 flex-1 flex-col gap-4 pb-2">
+      <div className="flex shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-slate-900">Positions</h1>
           <p className="text-sm text-slate-500">Today&apos;s open and closed trades with chart context.</p>
@@ -136,12 +136,15 @@ export function PositionsPage() {
         </Button>
       </div>
 
-      <div className="flex min-h-0 flex-col gap-4 sm:flex-row sm:items-stretch sm:gap-4">
-        <Card className="flex min-h-[min(640px,calc(100vh-13rem))] w-full shrink-0 flex-col overflow-hidden sm:h-[calc(100vh-13rem)] sm:w-[380px] sm:min-w-[380px]">
+      {/* Broker-style split: narrow left list (~28%), wide chart (~72%). Grid avoids flex wrap issues. */}
+      <div
+        className="grid min-h-0 w-full flex-1 grid-cols-1 gap-4 md:h-[calc(100vh-12rem)] md:max-h-[calc(100vh-12rem)] md:grid-cols-[minmax(260px,28%)_minmax(0,1fr)] md:gap-0 md:overflow-hidden md:rounded-xl md:border md:border-slate-200 md:bg-white md:shadow-sm"
+      >
+        <Card className="flex min-h-[420px] flex-col overflow-hidden border-slate-200 shadow-none md:min-h-0 md:h-full md:max-h-full md:rounded-none md:border-0 md:border-r md:shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
             <CardTitle>Today&apos;s Positions</CardTitle>
           </CardHeader>
-          <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto p-0">
+          <CardContent className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-0">
             {trades.length === 0 ? (
               <div className="p-6 text-sm text-slate-500">
                 {isLoading ? 'Loading today’s positions...' : 'No trades found for today.'}
@@ -172,16 +175,16 @@ export function PositionsPage() {
                               isSelected
                                 ? 'border-slate-900 bg-slate-900 text-white'
                                 : isClosed
-                                  ? 'border-slate-200 bg-slate-50 text-slate-500 hover:border-slate-300'
+                                  ? 'border-slate-200 bg-slate-50 font-normal text-slate-500 hover:border-slate-300'
                                   : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-3">
                               <div className="min-w-0">
-                                <div className={`text-xs font-medium uppercase tracking-wide ${isSelected ? 'text-slate-300' : isClosed ? 'text-slate-400' : 'text-slate-500'}`}>
+                                <div className={`text-xs font-medium uppercase tracking-wide ${isSelected ? 'text-slate-300' : isClosed ? 'font-normal text-slate-400' : 'text-slate-500'}`}>
                                   {isClosed ? 'Closed' : 'Open'} {trade.entry_side || '—'}
                                 </div>
-                                <div className="mt-1 truncate text-sm font-semibold">
+                                <div className={`mt-1 truncate text-sm ${isSelected ? 'font-semibold' : isClosed ? 'font-normal text-slate-600' : 'font-semibold'}`}>
                                   {trade.stock_option ?? '—'}
                                 </div>
                                 <div className={`mt-1 text-xs ${isSelected ? 'text-slate-300' : isClosed ? 'text-slate-400' : 'text-slate-500'}`}>
@@ -236,42 +239,42 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex min-h-[min(640px,calc(100vh-13rem))] min-w-0 flex-1 flex-col sm:h-[calc(100vh-13rem)]">
-          <CardHeader>
+        <Card className="flex min-h-[420px] min-w-0 flex-col overflow-hidden border-slate-200 shadow-none md:min-h-0 md:h-full md:max-h-full md:rounded-none md:border-0 md:shadow-none">
+          <CardHeader className="shrink-0 border-b border-slate-100 pb-4">
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col space-y-4">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0 md:px-4">
             {!selectedTrade ? (
-              <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 text-sm text-slate-500">
+              <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 md:min-h-[480px]">
                 Select a position to load its chart.
               </div>
             ) : (
               <>
-                  <div className="grid gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 md:grid-cols-2 xl:grid-cols-4">
+                <div className="grid shrink-0 gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Security</div>
-                    <div className="mt-1 font-medium text-slate-900">{selectedTrade.stock_option ?? '—'}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Security</div>
+                    <div className="mt-0.5 font-medium text-slate-900">{selectedTrade.stock_option ?? '—'}</div>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Entry</div>
-                    <div className="mt-1 font-medium text-slate-900">{formatWhen(selectedTrade.entry_at)}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Entry</div>
+                    <div className="mt-0.5 font-medium text-slate-900">{formatWhen(selectedTrade.entry_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Exit</div>
-                    <div className="mt-1 font-medium text-slate-900">{formatWhen(selectedTrade.exit_at)}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Exit</div>
+                    <div className="mt-0.5 font-medium text-slate-900">{formatWhen(selectedTrade.exit_at)}</div>
                   </div>
                   <div>
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Chart Symbol</div>
-                    <div className="mt-1 font-medium text-slate-900">{selectedChartSymbol ?? 'Chart not available'}</div>
+                    <div className="text-[10px] font-medium uppercase tracking-wide text-slate-500">Chart symbol</div>
+                    <div className="mt-0.5 font-medium text-slate-900">{selectedChartSymbol ?? 'Chart not available'}</div>
                   </div>
                 </div>
 
                 {selectedChartSymbol ? (
-                  <div className="lg:min-h-0 lg:flex-1">
+                  <div className="relative min-h-[360px] w-full min-w-0 flex-1 md:min-h-0 md:flex-1">
                     <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
                   </div>
                 ) : (
-                  <div className="flex min-h-[520px] items-center justify-center rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 lg:min-h-0 lg:flex-1">
+                  <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500 md:min-h-[480px]">
                     Chart not available for this security. This mainly applies to NIFTY options in `nifty_30min_breakout` and stock futures in `stock_75min_fut`.
                   </div>
                 )}

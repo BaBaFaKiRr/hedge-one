@@ -63,6 +63,8 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
           timezone: 'Asia/Kolkata',
           disabled_features: ['use_localstorage_for_settings'],
           enabled_features: ['study_templates'],
+          // Helps when parent uses flex/grid; autosize still needs a bounded box
+          fullscreen: false,
         });
 
         widget.onChartReady(() => {
@@ -122,7 +124,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   return (
     <div
       id={containerId}
-      className="h-full min-h-[520px] w-full min-w-0 flex-1 overflow-hidden rounded-xl border border-slate-200"
+      className="absolute inset-0 min-h-[320px] w-full overflow-hidden rounded-lg border border-slate-200 bg-slate-950"
     />
   );
 }
