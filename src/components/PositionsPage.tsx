@@ -138,7 +138,7 @@ export function PositionsPage() {
 
       {/* Split: flex row at md+. No dvh on inner shell — cap height with vh once so flex + min-h-0 can size the chart. */}
       <div
-        className="flex min-h-0 w-full flex-1 flex-col gap-4 md:max-h-[calc(100vh-8rem)] md:flex-row md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:border-slate-200 md:bg-white md:shadow-sm"
+        className="flex min-h-0 w-full flex-1 flex-col gap-4 md:flex-row md:items-stretch md:gap-0 md:overflow-hidden md:rounded-xl md:border md:border-slate-200 md:bg-white md:shadow-sm"
       >
         <Card className="flex min-h-[320px] w-full shrink-0 flex-col overflow-hidden border-slate-200 shadow-none md:h-full md:max-h-full md:min-h-0 md:w-[320px] md:min-w-[280px] md:max-w-[360px] md:rounded-none md:border-0 md:border-r md:shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
@@ -270,7 +270,7 @@ export function PositionsPage() {
                 </div>
 
                 {selectedChartSymbol ? (
-                  <div className="flex min-h-0 w-full flex-1 flex-col">
+                  <div className="flex min-h-0 w-full flex-1">
                     <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
                   </div>
                 ) : (

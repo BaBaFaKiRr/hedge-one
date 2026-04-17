@@ -69,6 +69,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
         try {
           const w = new window.TradingView.widget({
             autosize: true,
+            fullscreen: false,
             /** Charting Library expects `container` (id string or HTMLElement), not `container_id`. */
             container: containerId,
             datafeed,
@@ -107,6 +108,9 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
                 }
                 window.dispatchEvent(new Event('resize'));
               });
+              setTimeout(() => {
+                if (!disposed) window.dispatchEvent(new Event('resize'));
+              }, 100);
             };
 
             if (chart.dataReady()) {
@@ -182,16 +186,18 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
   if (loadError) {
     return (
-      <div className="flex h-full min-h-[520px] items-center justify-center rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
+      <div className="flex h-full w-full items-center justify-center rounded-xl border border-red-200 bg-red-50 p-6 text-sm text-red-700">
         {loadError}
       </div>
     );
   }
 
   return (
-    <div
-      id={containerId}
-      className="h-full min-h-[400px] w-full overflow-hidden rounded-lg border border-slate-200 bg-white"
-    />
+    <div className="flex h-full w-full min-h-0">
+      <div
+        id={containerId}
+        className="w-full min-h-0 flex-1 rounded-lg border border-slate-200 bg-white"
+      />
+    </div>
   );
 }
