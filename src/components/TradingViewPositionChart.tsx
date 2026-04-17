@@ -36,10 +36,19 @@ function loadTradingViewLibrary(): Promise<void> {
   });
 }
 
+/** Narrow typing for the bits we use; full API is `IChartWidgetApi`. */
+type TvChartApi = {
+  createShape: (...args: any[]) => Promise<unknown>;
+  dataReady: (cb?: () => void) => boolean;
+  executeActionById: (id: 'timeScaleReset' | 'chartReset') => void;
+  getPanes: () => { getMainSourcePriceScale: () => { setAutoScale: (v: boolean) => void } | null }[];
+  onDataLoaded: () => { subscribe: (ctx: null, cb: () => void, singleshot?: boolean) => void };
+};
+
 type TvWidget = {
   remove(): void;
   onChartReady(callback: () => void): void;
-  activeChart(): { createShape: (...args: any[]) => Promise<unknown> };
+  activeChart(): TvChartApi;
 };
 
 export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPositionChartProps) {
@@ -77,12 +86,35 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
           w.onChartReady(() => {
             if (disposed) return;
-            // Autosize often measures before flex layout settles; nudge a layout pass.
-            requestAnimationFrame(() => {
-              if (!disposed) window.dispatchEvent(new Event('resize'));
-            });
             const chart = w.activeChart();
             if (!chart) return;
+
+            /** Broker-style: fit candles to the viewport (time + auto price scale). */
+            const fitChartToData = () => {
+              if (disposed) return;
+              requestAnimationFrame(() => {
+                if (disposed) return;
+                try {
+                  chart.executeActionById('timeScaleReset');
+                } catch {
+                  /* ignore */
+                }
+                try {
+                  const mainScale = chart.getPanes?.()?.[0]?.getMainSourcePriceScale?.();
+                  mainScale?.setAutoScale(true);
+                } catch {
+                  /* ignore */
+                }
+                window.dispatchEvent(new Event('resize'));
+              });
+            };
+
+            if (chart.dataReady()) {
+              fitChartToData();
+            } else {
+              chart.dataReady(fitChartToData);
+            }
+            chart.onDataLoaded().subscribe(null, fitChartToData);
 
             const entryTime = Math.floor(new Date(trade.entry_at).getTime() / 1000);
             if (trade.entry_price != null) {
