@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { createTradingViewDatafeed } from '../utils/tradingViewDatafeed';
 
 /** Matches `hedge-one/public/charting_library/charting_library/` (nested package folder). */
 const TRADINGVIEW_SCRIPT = '/charting_library/charting_library/charting_library.js';
 const TRADINGVIEW_LIBRARY_PATH = '/charting_library/charting_library/';
+const tradingViewWindow = window as Window & { TradingView?: { widget: new (options: Record<string, unknown>) => unknown } };
 
 interface TradingViewSymbolChartProps {
   chartSymbol: string;
@@ -11,7 +12,7 @@ interface TradingViewSymbolChartProps {
 }
 
 function loadTradingViewLibrary(): Promise<void> {
-  if (window.TradingView?.widget) {
+  if (tradingViewWindow.TradingView?.widget) {
     return Promise.resolve();
   }
 
@@ -44,6 +45,8 @@ export function TradingViewSymbolChart({ chartSymbol, interval = '5' }: TradingV
   const [loadError, setLoadError] = useState<string | null>(null);
   const datafeed = useMemo(() => createTradingViewDatafeed(), []);
   const widgetRef = useRef<TvWidget | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const lastHeightRef = useRef<number>(0);
 
   useEffect(() => {
     let disposed = false;
@@ -51,25 +54,58 @@ export function TradingViewSymbolChart({ chartSymbol, interval = '5' }: TradingV
 
     loadTradingViewLibrary()
       .then(() => {
-        if (disposed || !window.TradingView?.widget) return;
+        if (disposed || !tradingViewWindow.TradingView?.widget) return;
 
         try {
-          const widget = new window.TradingView.widget({
-            autosize: true,
-            fullscreen: false,
-            container: containerId,
-            datafeed,
-            interval,
-            library_path: TRADINGVIEW_LIBRARY_PATH,
-            locale: 'en',
-            symbol: chartSymbol,
-            theme: 'light',
-            timezone: 'Asia/Kolkata',
-            disabled_features: ['use_localstorage_for_settings'],
-            enabled_features: ['study_templates'],
-          }) as TvWidget;
+          const containerEl = document.getElementById(containerId);
+          if (!containerEl) return;
 
-          widgetRef.current = widget;
+          const createWidget = (height: number) => {
+            widgetRef.current?.remove();
+            const widget = new tradingViewWindow.TradingView!.widget({
+              fullscreen: false,
+              container: containerId,
+              datafeed,
+              interval,
+              library_path: TRADINGVIEW_LIBRARY_PATH,
+              locale: 'en',
+              symbol: chartSymbol,
+              theme: 'light',
+              timezone: 'Asia/Kolkata',
+              width: '100%',
+              height,
+              disabled_features: ['use_localstorage_for_settings'],
+              enabled_features: ['study_templates'],
+            }) as TvWidget;
+            widgetRef.current = widget;
+            lastHeightRef.current = height;
+          };
+
+          createWidget(containerEl.clientHeight || 500);
+
+          let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+          const observer = new ResizeObserver(() => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+              if (disposed) return;
+              const nextHeight = containerEl.clientHeight || 500;
+              if (Math.abs(nextHeight - lastHeightRef.current) < 8) return;
+              createWidget(nextHeight);
+            }, 120);
+          });
+          observer.observe(containerEl);
+
+          if (disposed) {
+            observer.disconnect();
+            if (resizeTimer) clearTimeout(resizeTimer);
+          }
+
+          const prevCleanup = cleanupRef.current;
+          cleanupRef.current = () => {
+            observer.disconnect();
+            if (resizeTimer) clearTimeout(resizeTimer);
+            prevCleanup?.();
+          };
         } catch (error) {
           if (!disposed) {
             setLoadError(error instanceof Error ? error.message : 'TradingView chart failed to initialize');
@@ -84,6 +120,8 @@ export function TradingViewSymbolChart({ chartSymbol, interval = '5' }: TradingV
 
     return () => {
       disposed = true;
+      cleanupRef.current?.();
+      cleanupRef.current = null;
       widgetRef.current?.remove();
       widgetRef.current = null;
     };
@@ -98,8 +136,8 @@ export function TradingViewSymbolChart({ chartSymbol, interval = '5' }: TradingV
   }
 
   return (
-    <div className="flex h-full w-full min-h-0">
-      <div id={containerId} className="h-full w-full min-h-0 rounded-lg border border-slate-200 bg-white" />
+    <div className="h-full w-full">
+      <div id={containerId} className="h-full w-full rounded-lg border border-slate-200 bg-white" />
     </div>
   );
 }

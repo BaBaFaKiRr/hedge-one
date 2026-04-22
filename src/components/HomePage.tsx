@@ -278,21 +278,10 @@ export function HomePage() {
       </div>
 
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Activity className="h-5 w-5" />
-            Nifty 50 Live Chart
-          </CardTitle>
-          <CardDescription>
-            Streaming via custom websocket feed used by Positions charts.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div
-            className="mx-auto aspect-square w-full max-w-[680px] min-w-[240px] min-h-[260px] sm:min-w-[320px] sm:min-h-[320px] md:min-w-[420px] md:min-h-[420px] lg:min-w-[500px] lg:min-h-[500px]"
-          >
-            <TradingViewSymbolChart chartSymbol="NIFTY50" interval="5" />
-          </div>
+        <CardContent className="p-0">
+        <div className="w-full h-[60vh] min-h-[360px] md:min-h-[460px] lg:min-h-[560px]">
+          <TradingViewSymbolChart chartSymbol="NIFTY50" interval="5" />
+        </div>
         </CardContent>
       </Card>
 

@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import type { BaseTradeRow } from '../types/trades';
 import { createTradingViewDatafeed } from '../utils/tradingViewDatafeed';
 
 /** Matches `hedge-one/public/charting_library/charting_library/` (nested package folder). */
 const TRADINGVIEW_SCRIPT = '/charting_library/charting_library/charting_library.js';
 const TRADINGVIEW_LIBRARY_PATH = '/charting_library/charting_library/';
+const tradingViewWindow = window as Window & { TradingView?: { widget: new (options: Record<string, unknown>) => unknown } };
 
 interface TradingViewPositionChartProps {
   chartSymbol: string;
@@ -12,7 +13,7 @@ interface TradingViewPositionChartProps {
 }
 
 function loadTradingViewLibrary(): Promise<void> {
-  if (window.TradingView?.widget) {
+  if (tradingViewWindow.TradingView?.widget) {
     return Promise.resolve();
   }
 
@@ -56,6 +57,8 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   const [loadError, setLoadError] = useState<string | null>(null);
   const datafeed = useMemo(() => createTradingViewDatafeed(), []);
   const widgetRef = useRef<TvWidget | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
+  const lastHeightRef = useRef<number>(0);
 
   useEffect(() => {
     let disposed = false;
@@ -64,97 +67,124 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
     loadTradingViewLibrary()
       .then(() => {
-        if (disposed || !window.TradingView?.widget) return;
+        if (disposed || !tradingViewWindow.TradingView?.widget) return;
 
         try {
-          const w = new window.TradingView.widget({
-            autosize: true,
-            fullscreen: false,
-            /** Charting Library expects `container` (id string or HTMLElement), not `container_id`. */
-            container: containerId,
-            datafeed,
-            interval: '5',
-            library_path: TRADINGVIEW_LIBRARY_PATH,
-            locale: 'en',
-            symbol: chartSymbol,
-            theme: 'light',
-            timezone: 'Asia/Kolkata',
-            disabled_features: ['use_localstorage_for_settings'],
-            enabled_features: ['study_templates'],
-          }) as TvWidget;
+          const containerEl = document.getElementById(containerId);
+          if (!containerEl) return;
 
-          widgetRef.current = w;
+          const createWidget = (height: number) => {
+            widgetRef.current?.remove();
+            const widget = new tradingViewWindow.TradingView!.widget({
+              fullscreen: false,
+              /** Charting Library expects `container` (id string or HTMLElement), not `container_id`. */
+              container: containerId,
+              datafeed,
+              interval: '5',
+              library_path: TRADINGVIEW_LIBRARY_PATH,
+              locale: 'en',
+              symbol: chartSymbol,
+              theme: 'light',
+              timezone: 'Asia/Kolkata',
+              width: '100%',
+              height,
+              disabled_features: ['use_localstorage_for_settings'],
+              enabled_features: ['study_templates'],
+            }) as TvWidget;
+            widgetRef.current = widget;
+            lastHeightRef.current = height;
 
-          w.onChartReady(() => {
-            if (disposed) return;
-            const chart = w.activeChart();
-            if (!chart) return;
-
-            /** Broker-style: fit candles to the viewport (time + auto price scale). */
-            const fitChartToData = () => {
+            widget.onChartReady(() => {
               if (disposed) return;
-              requestAnimationFrame(() => {
+              const chart = widget.activeChart();
+              if (!chart) return;
+
+              /** Broker-style: fit candles to the viewport (time + auto price scale). */
+              const fitChartToData = () => {
                 if (disposed) return;
-                try {
-                  chart.executeActionById('timeScaleReset');
-                } catch {
-                  /* ignore */
-                }
-                try {
-                  const mainScale = chart.getPanes?.()?.[0]?.getMainSourcePriceScale?.();
-                  mainScale?.setAutoScale(true);
-                } catch {
-                  /* ignore */
-                }
-                window.dispatchEvent(new Event('resize'));
-              });
-              setTimeout(() => {
-                if (!disposed) window.dispatchEvent(new Event('resize'));
-              }, 100);
-            };
-
-            if (chart.dataReady()) {
-              fitChartToData();
-            } else {
-              chart.dataReady(fitChartToData);
-            }
-            chart.onDataLoaded().subscribe(null, fitChartToData);
-
-            const entryTime = Math.floor(new Date(trade.entry_at).getTime() / 1000);
-            if (trade.entry_price != null) {
-              void chart
-                .createShape(
-                  { time: entryTime, price: trade.entry_price },
-                  {
-                    shape: 'text',
-                    lock: true,
-                    disableSelection: true,
-                    disableSave: true,
-                    disableUndo: true,
-                    text: `Entry ${trade.entry_side}`,
-                    overrides: { color: '#22c55e' },
+                requestAnimationFrame(() => {
+                  if (disposed) return;
+                  try {
+                    chart.executeActionById('timeScaleReset');
+                  } catch {
+                    /* ignore */
                   }
-                )
-                .catch(() => {});
-            }
-
-            if (trade.exit_at && trade.exit_price != null) {
-              void chart
-                .createShape(
-                  { time: Math.floor(new Date(trade.exit_at).getTime() / 1000), price: trade.exit_price },
-                  {
-                    shape: 'text',
-                    lock: true,
-                    disableSelection: true,
-                    disableSave: true,
-                    disableUndo: true,
-                    text: 'Exit',
-                    overrides: { color: '#ef4444' },
+                  try {
+                    const mainScale = chart.getPanes?.()?.[0]?.getMainSourcePriceScale?.();
+                    mainScale?.setAutoScale(true);
+                  } catch {
+                    /* ignore */
                   }
-                )
-                .catch(() => {});
-            }
+                });
+              };
+
+              if (chart.dataReady()) {
+                fitChartToData();
+              } else {
+                chart.dataReady(fitChartToData);
+              }
+              chart.onDataLoaded().subscribe(null, fitChartToData);
+
+              const entryTime = Math.floor(new Date(trade.entry_at).getTime() / 1000);
+              if (trade.entry_price != null) {
+                void chart
+                  .createShape(
+                    { time: entryTime, price: trade.entry_price },
+                    {
+                      shape: 'text',
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      text: `Entry ${trade.entry_side}`,
+                      overrides: { color: '#22c55e' },
+                    }
+                  )
+                  .catch(() => {});
+              }
+
+              if (trade.exit_at && trade.exit_price != null) {
+                void chart
+                  .createShape(
+                    { time: Math.floor(new Date(trade.exit_at).getTime() / 1000), price: trade.exit_price },
+                    {
+                      shape: 'text',
+                      lock: true,
+                      disableSelection: true,
+                      disableSave: true,
+                      disableUndo: true,
+                      text: 'Exit',
+                      overrides: { color: '#ef4444' },
+                    }
+                  )
+                  .catch(() => {});
+              }
+            });
+          };
+
+          createWidget(containerEl.clientHeight || 500);
+
+          let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+          const observer = new ResizeObserver(() => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+              if (disposed) return;
+              const nextHeight = containerEl.clientHeight || 500;
+              if (Math.abs(nextHeight - lastHeightRef.current) < 8) return;
+              createWidget(nextHeight);
+            }, 120);
           });
+          observer.observe(containerEl);
+
+          if (disposed) {
+            observer.disconnect();
+            if (resizeTimer) clearTimeout(resizeTimer);
+          }
+
+          cleanupRef.current = () => {
+            observer.disconnect();
+            if (resizeTimer) clearTimeout(resizeTimer);
+          };
         } catch (error) {
           if (!disposed) {
             setLoadError(error instanceof Error ? error.message : 'TradingView chart failed to initialize');
@@ -169,6 +199,8 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
 
     return () => {
       disposed = true;
+      cleanupRef.current?.();
+      cleanupRef.current = null;
       widgetRef.current?.remove();
       widgetRef.current = null;
     };
@@ -193,10 +225,10 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   }
 
   return (
-    <div className="flex h-full w-full min-h-0">
+    <div className="h-full w-full">
       <div
         id={containerId}
-        className="w-full min-h-0 flex-1 rounded-lg border border-slate-200 bg-white"
+        className="h-full w-full rounded-lg border border-slate-200 bg-white"
       />
     </div>
   );
