@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { TrendingUp, Activity, BarChart3, DollarSign, ChevronLeft, ChevronRight } from 'lucide-react';
+import { TrendingUp, Activity, BarChart3, ChevronLeft, ChevronRight } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
@@ -11,6 +11,7 @@ import { formatInr } from '../utils/currency';
 import { useLiveTradePrices } from '../hooks/useLiveTradePrices';
 import { getLiveTradeSnapshot, strategySupportsLivePnl } from '../utils/liveTradeMapping';
 import type { BaseTradeRow } from '../types/trades';
+import { TradingViewSymbolChart } from './TradingViewSymbolChart';
 
 interface Trade extends BaseTradeRow {}
 
@@ -158,130 +159,17 @@ export function HomePage() {
     },
   ];
 
+  const recentLogs = useMemo(() => logs.slice(0, 8), [logs]);
+
   return (
-    <>
-      <style>{`
-        /* Mobile-only styles - only apply below 768px */
-        @media (max-width: 767px) {
-          /* Make stats grid 2 columns on mobile */
-          .mobile-stats-grid {
-            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-            gap: 0.75rem !important;
-          }
-          
-          /* Make stat cards more compact on mobile */
-          .mobile-stats-grid [data-slot="card"] {
-            gap: 0.5rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-header"] {
-            padding: 0.75rem 0.75rem 0.5rem 0.75rem !important;
-            gap: 0.5rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-title"] {
-            font-size: 0.75rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-content"] {
-            padding: 0 0.75rem 0.75rem 0.75rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-content"] > div:first-child {
-            font-size: 1.125rem !important;
-            margin-bottom: 0.25rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-content"] > p {
-            font-size: 0.75rem !important;
-            line-height: 1.2 !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-header"] .p-2 {
-            padding: 0.375rem !important;
-          }
-          
-          .mobile-stats-grid [data-slot="card-header"] .h-5 {
-            height: 1rem !important;
-            width: 1rem !important;
-          }
-          
-          /* Hide desktop table on mobile */
-          .desktop-trades-table {
-            display: none !important;
-          }
-          
-          /* Show mobile card view */
-          .mobile-trades-cards {
-            display: block;
-          }
-          
-          .mobile-trade-card {
-            border: 1px solid rgb(226, 232, 240);
-            border-radius: 0.5rem;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-          }
-          
-          .mobile-trade-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
-          }
-          
-          .mobile-trade-stock {
-            font-weight: 600;
-            color: rgb(15, 23, 42);
-            font-size: 0.875rem;
-          }
-          
-          .mobile-trade-position {
-            font-size: 0.75rem;
-            padding: 0.25rem 0.5rem;
-            background-color: rgb(241, 245, 249);
-            border-radius: 0.25rem;
-            text-transform: capitalize;
-            color: rgb(51, 65, 85);
-          }
-          
-          .mobile-trade-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 0.875rem;
-            margin-bottom: 0.25rem;
-          }
-          
-          .mobile-trade-label {
-            color: rgb(71, 85, 105);
-          }
-          
-          .mobile-trade-value {
-            font-weight: 500;
-            color: rgb(15, 23, 42);
-          }
-        }
-        
-        /* Desktop styles - hide mobile view, show table */
-        @media (min-width: 768px) {
-          .mobile-trades-cards {
-            display: none !important;
-          }
-          
-          .desktop-trades-table {
-            display: block;
-          }
-        }
-      `}</style>
-      <div className="space-y-6">
+    <div className="space-y-6">
       <div>
         <h1 className="text-slate-900 mb-2">Dashboard</h1>
         <p className="text-slate-600">Welcome back! Here's an overview of your trading activity.</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mobile-stats-grid">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -301,6 +189,57 @@ export function HomePage() {
         })}
       </div>
 
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+        <Card className="xl:col-span-8">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Nifty 50 Live Chart
+            </CardTitle>
+            <CardDescription>
+              Streaming via custom websocket feed used by Positions charts.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[360px] w-full min-h-0 md:h-[460px]">
+              <TradingViewSymbolChart chartSymbol="NIFTY50" interval="5" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="xl:col-span-4">
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-3">
+            <div>
+              <CardTitle>Latest Engine Logs</CardTitle>
+              <CardDescription>Recent messages from python worker logs</CardDescription>
+            </div>
+            <Button onClick={fetchLogs} disabled={isLoadingLogs} size="sm" variant="secondary">
+              {isLoadingLogs ? 'Refreshing...' : 'Refresh'}
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {isLoadingLogs ? (
+              <div className="text-sm text-slate-600">Loading logs...</div>
+            ) : recentLogs.length === 0 ? (
+              <div className="text-sm text-slate-500">No logs available.</div>
+            ) : (
+              <div className="space-y-2">
+                {recentLogs.map((log) => (
+                  <div key={log.id} className="rounded-md border border-slate-200 bg-slate-50 p-2.5">
+                    <div className="text-[11px] text-slate-500">
+                      {new Date(log.created_at).toLocaleString('en-IN')}
+                    </div>
+                    <div className="mt-1 line-clamp-2 text-xs text-slate-700">
+                      {log.content?.trim() || 'No message'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
         <CardHeader className="flex items-center justify-between">
           <div>
@@ -318,35 +257,35 @@ export function HomePage() {
             <div className="text-slate-500 text-sm">No trades recorded yet.</div>
           ) : (
             <>
-              {/* Mobile Card View - Only visible on mobile */}
-              <div className="mobile-trades-cards">
+              {/* Mobile Card View */}
+              <div className="space-y-3 md:hidden">
                 {paginatedTrades.map((trade) => {
                   const live = getLiveTradeSnapshot(trade, quotesByKey);
                   const pnlValue = trade.realized_pnl ?? live.unrealizedPnl;
                   const supportsLivePnl = strategySupportsLivePnl(trade.strategy);
                   return (
-                    <div key={trade.id} className="mobile-trade-card">
-                      <div className="mobile-trade-header">
-                        <span className="mobile-trade-stock">{trade.stock_option ?? '—'}</span>
-                        <span className="mobile-trade-position">{trade.entry_side ?? '—'}</span>
+                    <div key={trade.id} className="rounded-lg border border-slate-200 p-3">
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-sm font-semibold text-slate-900">{trade.stock_option ?? '—'}</span>
+                        <span className="rounded bg-slate-100 px-2 py-0.5 text-xs capitalize text-slate-600">{trade.entry_side ?? '—'}</span>
                       </div>
                       {!trade.exit_at && (
-                        <div className="mobile-trade-row">
-                          <span className="mobile-trade-label">LTP:</span>
-                          <span className="mobile-trade-value">
+                        <div className="mb-1 flex items-center justify-between text-sm">
+                          <span className="text-slate-500">LTP:</span>
+                          <span className="font-medium text-slate-900">
                             {supportsLivePnl && live.hasLivePrice ? formatInr(live.ltp) : '—'}
                           </span>
                         </div>
                       )}
-                      <div className="mobile-trade-row">
-                        <span className="mobile-trade-label">P&amp;L:</span>
-                        <span className="mobile-trade-value">
+                      <div className="mb-1 flex items-center justify-between text-sm">
+                        <span className="text-slate-500">P&amp;L:</span>
+                        <span className="font-medium text-slate-900">
                           {pnlValue == null ? 'Open' : formatInr(pnlValue)}
                         </span>
                       </div>
-                      <div className="mobile-trade-row">
-                        <span className="mobile-trade-label">Date:</span>
-                        <span className="mobile-trade-value">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-slate-500">Date:</span>
+                        <span className="font-medium text-slate-900">
                           {trade.entry_at
                             ? new Date(trade.entry_at).toLocaleString()
                             : '—'}
@@ -356,8 +295,8 @@ export function HomePage() {
                   );
                 })}
               </div>
-              {/* Desktop Table View - Only visible on desktop */}
-              <div className="desktop-trades-table">
+              {/* Desktop Table View */}
+              <div className="hidden md:block">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -427,6 +366,5 @@ export function HomePage() {
         </CardContent>
       </Card>
     </div>
-    </>
   );
 }
