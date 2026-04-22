@@ -59,6 +59,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   const widgetRef = useRef<TvWidget | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastHeightRef = useRef<number>(0);
+  const lastWidthRef = useRef<number>(0);
 
   useEffect(() => {
     let disposed = false;
@@ -73,7 +74,7 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
           const containerEl = document.getElementById(containerId);
           if (!containerEl) return;
 
-          const createWidget = (height: number) => {
+          const createWidget = (height: number, width: number) => {
             widgetRef.current?.remove();
             const widget = new tradingViewWindow.TradingView!.widget({
               fullscreen: false,
@@ -86,13 +87,14 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
               symbol: chartSymbol,
               theme: 'light',
               timezone: 'Asia/Kolkata',
-              width: '100%',
+              width,
               height,
               disabled_features: ['use_localstorage_for_settings'],
               enabled_features: ['study_templates'],
             }) as TvWidget;
             widgetRef.current = widget;
             lastHeightRef.current = height;
+            lastWidthRef.current = width;
 
             widget.onChartReady(() => {
               if (disposed) return;
@@ -162,16 +164,22 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
             });
           };
 
-          createWidget(containerEl.clientHeight || 500);
+          createWidget(containerEl.clientHeight || 500, containerEl.clientWidth || 900);
 
           let resizeTimer: ReturnType<typeof setTimeout> | null = null;
           const observer = new ResizeObserver(() => {
             if (resizeTimer) clearTimeout(resizeTimer);
             resizeTimer = setTimeout(() => {
               if (disposed) return;
+              const nextWidth = containerEl.clientWidth || 900;
               const nextHeight = containerEl.clientHeight || 500;
-              if (Math.abs(nextHeight - lastHeightRef.current) < 8) return;
-              createWidget(nextHeight);
+              if (
+                Math.abs(nextHeight - lastHeightRef.current) < 8 &&
+                Math.abs(nextWidth - lastWidthRef.current) < 8
+              ) {
+                return;
+              }
+              createWidget(nextHeight, nextWidth);
             }, 120);
           });
           observer.observe(containerEl);
@@ -225,10 +233,10 @@ export function TradingViewPositionChart({ chartSymbol, trade }: TradingViewPosi
   }
 
   return (
-    <div className="h-full w-full">
+    <div className="h-full w-full min-w-0">
       <div
         id={containerId}
-        className="h-full w-full rounded-lg border border-slate-200 bg-white"
+        className="h-full w-full min-w-0 rounded-lg border border-slate-200 bg-white"
       />
     </div>
   );

@@ -147,9 +147,9 @@ export function PositionsPage() {
 
       {/* Stable split shell: keep row layout so chart never drops under the positions list. */}
       <div
-        className="flex min-h-0 w-full flex-1 flex-row items-stretch gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
+        className="flex min-h-0 w-full flex-1 flex-row items-stretch gap-0 rounded-xl border border-slate-200 bg-white shadow-sm"
       >
-        <Card className="flex h-full min-h-0 basis-2/5 shrink flex-col overflow-hidden rounded-none border-0 border-r border-slate-200 shadow-none">
+        <Card className="flex h-full min-h-0 min-w-0 max-w-[30%] flex-[0_0_30%] flex-col overflow-hidden rounded-none border-0 border-r border-slate-200 shadow-none">
           <CardHeader className="border-b border-slate-200 pb-4">
             <div className="flex items-center justify-between gap-3">
               <CardTitle>Today&apos;s Positions</CardTitle>
@@ -197,7 +197,7 @@ export function PositionsPage() {
                                   : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50'
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-3">
+                            <div className="flex min-w-0 items-start justify-between gap-3">
                               <div className="min-w-0">
                                 <div className={`text-xs font-medium uppercase tracking-wide ${isSelected ? 'text-slate-300' : isClosed ? 'font-normal text-slate-400' : 'text-slate-500'}`}>
                                   {isClosed ? 'Closed' : 'Open'} {trade.entry_side || '—'}
@@ -210,7 +210,7 @@ export function PositionsPage() {
                                   {!chartAvailable ? ' · Chart not available' : ''}
                                 </div>
                               </div>
-                              <div className="shrink-0 text-right">
+                              <div className="min-w-0 text-right">
                                 <div className={`text-xs ${isSelected ? 'text-slate-300' : isClosed ? 'text-slate-400' : 'text-slate-500'}`}>
                                   LTP
                                 </div>
@@ -257,11 +257,11 @@ export function PositionsPage() {
           </CardContent>
         </Card>
 
-        <Card className="flex h-full min-h-0 min-w-0 basis-3/5 flex-1 flex-col overflow-hidden rounded-none border-0 shadow-none">
+        <Card className="flex h-full min-h-0 min-w-0 flex-[1_1_70%] flex-col overflow-hidden rounded-none border-0 shadow-none">
           <CardHeader className="shrink-0 border-b border-slate-100 pb-4">
             <CardTitle>Position Chart</CardTitle>
           </CardHeader>
-          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0">
+          <CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-0">
             {!selectedTrade ? (
               <div className="flex min-h-[320px] flex-1 items-center justify-center rounded-lg border border-dashed border-slate-300 text-sm text-slate-500 md:min-h-[480px]">
                 Select a position to load its chart.
@@ -288,7 +288,7 @@ export function PositionsPage() {
                 </div>
 
                 {selectedChartSymbol ? (
-                  <div className="flex min-h-0 w-full flex-1">
+                  <div className="flex min-h-0 w-full min-w-0 flex-1">
                     <TradingViewPositionChart chartSymbol={selectedChartSymbol} trade={selectedTrade} />
                   </div>
                 ) : (

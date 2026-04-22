@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from './ui/button';
 import { 
-  Zap, 
-  Code, 
-  TrendingUp,
-  BarChart3, 
-  Shield, 
-  Clock, 
-  Activity, 
-  Globe,
-  ArrowRight,
   CheckCircle2,
+  Rocket,
+  Cpu,
+  Shield,
+  TrendingUp,
+  Activity,
+  Workflow,
+  Layers,
+  LineChart,
+  Bell,
+  Server,
+  Gauge,
+  ArrowRight,
   MessageCircle,
   Mail,
   Send
@@ -26,7 +29,6 @@ interface MarketingLandingPageProps {
 }
 
 export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps) {
-  const [scrollY, setScrollY] = useState(0);
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -35,12 +37,6 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       `https://${projectId}.supabase.co`,
       publicAnonKey
     );
-  }, []);
-
-  useEffect(() => {
-    const handleScroll = () => setScrollY(window.scrollY);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const sendTelegramAlert = async (name: string, email: string, phone: string, message: string) => {
@@ -137,6 +133,68 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
   const darkGreen = '#00CC47';
   const grey = '#A9A9A9';
   const darkBg = '#0a0a0a';
+  const cardBg = 'rgba(7, 7, 7, 0.75)';
+
+  const steps = [
+    {
+      title: 'Connect Your Broker',
+      description:
+        'Securely plug in Zerodha and other supported broker accounts so HedgeOne can execute with your permissions.',
+      icon: Shield,
+    },
+    {
+      title: 'Pick or Build Strategy',
+      description:
+        'Launch a proven in-house strategy or request a custom ruleset tuned to your risk profile and market preferences.',
+      icon: Workflow,
+    },
+    {
+      title: 'Deploy and Monitor',
+      description:
+        'Go live instantly with live positions, TradingView charts, logs, and broker-aware execution guardrails.',
+      icon: Rocket,
+    },
+  ];
+
+  const useCases = [
+    'Index breakout automation',
+    'Stock intraday signal execution',
+    'Live portfolio supervision',
+    'PnL and risk tracking',
+    'Manual + automated hybrid trading',
+    'Daily tradebook analytics',
+  ];
+
+  const coreFeatures = [
+    { title: 'Strategy Engine', desc: 'Rule-driven execution with configurable entries, exits, and position sizing.', icon: Cpu },
+    { title: 'Real-time Monitoring', desc: 'Observe live positions, quotes, chart overlays, and execution states.', icon: Activity },
+    { title: 'Risk Controls', desc: 'Use hard stop conditions, quantity controls, and strategy-level safeguards.', icon: Shield },
+    { title: 'TradingView Context', desc: 'Read market context with integrated charts where positions and entries align.', icon: LineChart },
+    { title: 'Broker Reliability', desc: 'Broker-aware workflows with error handling and session management support.', icon: Server },
+    { title: 'Signal-to-Execution Pipeline', desc: 'Move from idea to deployed strategy without rebuilding infrastructure.', icon: Layers },
+  ];
+
+  const planCards = [
+    {
+      name: 'Starter',
+      subtitle: 'For disciplined solo traders',
+      points: ['1 live account', '2 active strategies', 'Dashboard + tradebook + positions', 'Email + Telegram support'],
+      cta: 'Start with Starter',
+    },
+    {
+      name: 'Pro',
+      subtitle: 'For active intraday operators',
+      points: ['Up to 3 accounts', 'Custom strategy onboarding', 'Priority infra monitoring', 'Advanced analytics and logs'],
+      cta: 'Choose Pro',
+      highlighted: true,
+    },
+    {
+      name: 'Desk',
+      subtitle: 'For small prop teams',
+      points: ['Multi-user collaboration', 'Dedicated deployment setup', 'Tailored risk controls', 'Hands-on integration support'],
+      cta: 'Talk to Us',
+    },
+  ];
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#000000', color: '#ffffff', overflowX: 'hidden' }}>
@@ -191,7 +249,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       {/* Hero Section */}
       <section style={{ 
         position: 'relative', 
-        minHeight: '100vh', 
+        minHeight: '88vh', 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'center', 
@@ -205,36 +263,22 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
             inset: 0, 
             background: `linear-gradient(to bottom right, #000000, ${darkBg}, #000000)`
           }} />
-          {/* Particle Network */}
-          <div style={{ position: 'absolute', inset: 0, opacity: 0.3 }}>
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  position: 'absolute',
-                  width: '4px',
-                  height: '4px',
-                  backgroundColor: neonGreen,
-                  borderRadius: '50%',
-                  left: `${Math.random() * 100}%`,
-                  top: `${Math.random() * 100}%`,
-                  animation: `pulse ${2 + Math.random() * 2}s ease-in-out infinite`,
-                  animationDelay: `${Math.random() * 2}s`,
-                }}
-              />
-            ))}
-          </div>
+          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 20% 20%, ${neonGreen}11, transparent 35%), radial-gradient(circle at 80% 30%, #22d3ee1a, transparent 35%), radial-gradient(circle at 50% 80%, #7c3aed22, transparent 35%)` }} />
         </div>
 
         <div style={{ position: 'relative', zIndex: 10, maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
           <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', border: `1px solid ${neonGreen}55`, borderRadius: '999px', padding: '0.4rem 0.9rem', marginBottom: '1.25rem', background: `${neonGreen}14` }}>
+              <Bell style={{ width: '0.9rem', height: '0.9rem', color: neonGreen }} />
+              <span style={{ color: '#e2e8f0', fontSize: '0.8rem' }}>Now live - manage your algo desk from one console</span>
+            </div>
             <h1 style={{ 
               fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', 
               fontWeight: 'bold', 
               lineHeight: '1.2',
               marginBottom: '2rem'
             }}>
-              <span style={{ display: 'block' }}>Next-Gen Algorithmic</span>
+              <span style={{ display: 'block' }}>Your Trading Assistant,</span>
               <span style={{ 
                 display: 'block',
                 background: `linear-gradient(to right, #ffffff, ${neonGreen}, #ffffff)`,
@@ -242,7 +286,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text'
               }}>
-                Trading. Tailored for You.
+                running your strategy stack.
               </span>
             </h1>
             <p style={{ 
@@ -252,11 +296,11 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               margin: '0 auto 2rem',
               lineHeight: '1.6'
             }}>
-              Deploy and Manage Algorithmic Trading Strategies — Either Our In-House Strategies or get one Custom-Built for You.
+              HedgeOne helps you deploy, monitor, and improve algorithmic strategies without building infra from scratch. Plug in a broker, activate your strategy, and track execution live.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', alignItems: 'center', paddingTop: '1rem' }}>
               <Button
-                onClick={scrollToContact}
+                onClick={onGetStarted}
                 size="lg"
                 style={{ 
                   backgroundColor: neonGreen, 
@@ -268,11 +312,11 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 }}
                 className="hover:opacity-90 hover:scale-105 transition-all"
               >
-                Book a Free Consultation
+                Launch Dashboard
                 <ArrowRight style={{ marginLeft: '0.5rem', width: '1.25rem', height: '1.25rem' }} />
               </Button>
               <Button
-                onClick={onGetStarted}
+                onClick={scrollToContact}
                 size="lg"
                 variant="outline"
                 style={{ 
@@ -285,36 +329,9 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 }}
                 className="hover:bg-opacity-10 transition-all"
               >
-                Explore Our Strategies
+                Talk to Strategy Team
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Scroll Indicator */}
-        <div style={{ 
-          position: 'absolute', 
-          bottom: '2.5rem', 
-          left: '50%', 
-          transform: 'translateX(-50%)',
-          animation: 'bounce 2s infinite'
-        }}>
-          <div style={{ 
-            width: '1.5rem', 
-            height: '2.5rem', 
-            border: `2px solid ${neonGreen}`, 
-            borderRadius: '9999px', 
-            display: 'flex', 
-            justifyContent: 'center',
-            paddingTop: '0.5rem'
-          }}>
-            <div style={{ 
-              width: '4px', 
-              height: '0.75rem', 
-              backgroundColor: neonGreen, 
-              borderRadius: '9999px',
-              animation: 'pulse 2s infinite'
-            }} />
           </div>
         </div>
       </section>
@@ -326,115 +343,76 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         opacity: 0.5
       }} />
 
-      {/* About Us Section */}
+      {/* How It Works */}
       <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', position: 'relative' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 'clamp(2rem, 5vw, 3rem)', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1.5rem' }}>
-                About <span style={{ color: neonGreen }}>HedgeOne</span>
-              </h2>
-              <p style={{ fontSize: '1.125rem', color: grey, lineHeight: '1.75', marginBottom: '1rem' }}>
-                HedgeOne specializes in curating high-performance algorithmic trading strategies 
-                and developing custom algotrading software solutions. We transform your strategy
-                ideas into high-performing, scalable trading systems.
-              </p>
-              <p style={{ fontSize: '1.125rem', color: grey, lineHeight: '1.75', marginBottom: '1.5rem' }}>
-                We will work with you to backtest and optimize your strategy, and then deploy it to your trading platform.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem', paddingTop: '1rem' }}>
-                {[
-                  { value: '24/7', label: 'Monitoring' },
-                  { value: '99.9%', label: 'Uptime' }
-                ].map((stat, i) => (
-                  <div key={i} style={{ 
-                    padding: 'clamp(0.75rem, 2vw, 1rem)', 
-                    backgroundColor: '#000000', 
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.75rem',
-                    backdropFilter: 'blur(4px)'
-                  }}>
-                    <div style={{ fontSize: 'clamp(1.25rem, 4vw, 1.875rem)', fontWeight: 'bold', color: neonGreen }}>{stat.value}</div>
-                    <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: grey, marginTop: '0.25rem' }}>{stat.label}</div>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
+            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
+              Three steps. <span style={{ color: neonGreen }}>That&apos;s it.</span>
+            </h2>
+            <p style={{ color: grey, fontSize: '1.05rem', maxWidth: '700px', margin: '0 auto' }}>
+              HedgeOne is designed so execution teams can go live quickly while still retaining strong controls.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
+            {steps.map((step, index) => (
+              <div key={step.title} style={{ background: cardBg, border: `1px solid ${neonGreen}2e`, borderRadius: '1rem', padding: '1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <div style={{ width: '2.4rem', height: '2.4rem', borderRadius: '0.7rem', background: `${neonGreen}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <step.icon style={{ width: '1.1rem', height: '1.1rem', color: neonGreen }} />
                   </div>
-                ))}
-              </div>
-            </div>
-            <div style={{ position: 'relative' }}>
-              <div style={{ 
-                position: 'relative', 
-                background: `linear-gradient(to bottom right, ${neonGreen}1a, transparent)`,
-                borderRadius: '1rem',
-                padding: 'clamp(1rem, 3vw, 2rem)',
-                border: `1px solid ${neonGreen}33`,
-                backdropFilter: 'blur(4px)'
-              }}>
-                <div className="asset-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 'clamp(0.5rem, 2vw, 1rem)' }}>
-                  {['Stocks', 'Commodities', 'FnO', 'Crypto'].map((asset, i) => (
-                    <div
-                      key={asset}
-                      style={{
-                        padding: 'clamp(0.75rem, 2vw, 1.5rem)',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                        border: `1px solid ${neonGreen}33`,
-                        borderRadius: '0.75rem',
-                        transition: 'all 0.3s ease',
-                        minWidth: 0
-                      }}
-                      className="hover:border-[#00FF5A] hover:shadow-[0_0_20px_rgba(0,255,90,0.3)]"
-                    >
-                      <div style={{ fontSize: 'clamp(1rem, 3vw, 1.5rem)', fontWeight: 'bold', color: neonGreen, marginBottom: '0.5rem' }}>{asset}</div>
-                      <div style={{ fontSize: 'clamp(0.75rem, 2vw, 0.875rem)', color: grey }}>Multi-Asset Trading</div>
-                    </div>
-                  ))}
+                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>0{index + 1}</span>
                 </div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.4rem' }}>{step.title}</h3>
+                <p style={{ color: grey, fontSize: '0.9rem', lineHeight: 1.6 }}>{step.description}</p>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
+      {/* Use Cases + Features */}
       <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+            <div style={{ background: cardBg, border: `1px solid ${neonGreen}30`, borderRadius: '1rem', padding: '1.4rem' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.8rem' }}>Put your algo stack to work</h3>
+              <p style={{ color: grey, marginBottom: '1rem' }}>
+                Run deployment-grade workflows without managing servers, websockets, or broker session complexity.
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
+                {useCases.map((item) => (
+                  <span key={item} style={{ border: `1px solid ${neonGreen}45`, color: '#d1fae5', borderRadius: '999px', padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}>
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div style={{ background: cardBg, border: `1px solid #334155`, borderRadius: '1rem', padding: '1.4rem' }}>
+              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.8rem' }}>Why teams choose HedgeOne</h3>
+              <div style={{ display: 'grid', gap: '0.65rem' }}>
+                {['Transparent strategy lifecycle', 'Live execution visibility', 'Broker-level resilience', 'Fast iteration on custom ideas'].map((item) => (
+                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#cbd5e1', fontSize: '0.9rem' }}>
+                    <CheckCircle2 style={{ width: '0.95rem', height: '0.95rem', color: neonGreen }} />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 3rem)' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Our <span style={{ color: neonGreen }}>Services</span>
+              Core <span style={{ color: neonGreen }}>Capabilities</span>
             </h2>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
-            {[
-              {
-                icon: TrendingUp,
-                title: 'Algo Strategy Curation',
-                description: 'Hand-picked, high-performance trading strategies vetted by our quantitative team.',
-                gradient: `linear-gradient(to bottom right, ${neonGreen}, ${darkGreen})`,
-              },
-              {
-                icon: Code,
-                title: 'Custom Software Development',
-                description: 'Bespoke algorithmic trading systems built to your specifications and requirements.',
-                gradient: 'linear-gradient(to bottom right, #3b82f6, #06b6d4)',
-              },
-              {
-                icon: BarChart3,
-                title: 'Quant Research & Backtesting',
-                description: 'Rigorous testing and optimization using historical data and advanced analytics.',
-                gradient: 'linear-gradient(to bottom right, #a855f7, #ec4899)',
-              },
-              {
-                icon: Globe,
-                title: 'Multi-Asset Trading',
-                description: 'Seamless trading across Stocks, FnO, Commodities, and Cryptocurrencies.',
-                gradient: `linear-gradient(to bottom right, ${neonGreen}, #10b981)`,
-              },
-            ].map((service, i) => (
+            {coreFeatures.map((feature) => (
               <div
-                key={service.title}
+                key={feature.title}
                 style={{
                   position: 'relative',
                   padding: '1.5rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                  backgroundColor: cardBg,
                   border: `1px solid ${neonGreen}33`,
                   borderRadius: '0.75rem',
                   backdropFilter: 'blur(4px)',
@@ -446,7 +424,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                   width: '3rem', 
                   height: '3rem', 
                   borderRadius: '0.75rem', 
-                  background: service.gradient,
+                  background: `linear-gradient(to bottom right, ${neonGreen}, ${darkGreen})`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -455,67 +433,60 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 }}
                 className="group-hover:scale-110"
                 >
-                  <service.icon style={{ width: '1.5rem', height: '1.5rem', color: '#000000' }} />
+                  <feature.icon style={{ width: '1.5rem', height: '1.5rem', color: '#000000' }} />
                 </div>
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>{service.title}</h3>
-                <p style={{ color: grey, fontSize: '0.875rem', lineHeight: '1.75' }}>{service.description}</p>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>{feature.title}</h3>
+                <p style={{ color: grey, fontSize: '0.875rem', lineHeight: '1.7' }}>{feature.desc}</p>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Features / Why Us Section */}
+      {/* Plans */}
       <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem' }}>
         <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
             <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Why <span style={{ color: neonGreen }}>Choose Us</span>
+              Choose your <span style={{ color: neonGreen }}>deployment path</span>
             </h2>
             <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
-              Cause the trades you see on strategy "details page" are the trades we make with our own money.
+              Start with a managed setup and scale as your strategy throughput and capital grow.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
-            {[
-              { icon: Zap, title: 'Ultra-Low Latency Systems', desc: 'Microsecond execution speeds' },
-              { icon: TrendingUp, title: 'Trading View', desc: 'We use TradingView advanced charts and indicators' },
-              { icon: Shield, title: 'High-Availability Architecture', desc: '99.9% uptime guarantee' },
-              { icon: Activity, title: 'Real-Time Risk Engine', desc: 'Advanced risk management' },
-              { icon: Clock, title: '24/7 Monitoring', desc: 'Round-the-clock surveillance' },
-              { icon: Globe, title: 'Multi-Exchange Connectivity', desc: 'Seamless integration' },
-              { icon: BarChart3, title: 'Advanced Analytics', desc: 'Deep market insights' },
-              { icon: CheckCircle2, title: 'Proven Track Record', desc: 'Trusted by traders worldwide' },
-            ].map((feature, i) => (
+            {planCards.map((plan) => (
               <div
-                key={feature.title}
+                key={plan.name}
                 style={{
                   padding: '1.5rem',
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  border: `1px solid ${neonGreen}33`,
+                  backgroundColor: plan.highlighted ? `${neonGreen}14` : cardBg,
+                  border: plan.highlighted ? `1px solid ${neonGreen}` : `1px solid ${neonGreen}33`,
                   borderRadius: '0.75rem',
                   backdropFilter: 'blur(4px)',
                   transition: 'all 0.3s ease'
                 }}
                 className="hover:border-[#00FF5A] hover:shadow-[0_0_20px_rgba(0,255,90,0.3)]"
               >
-                <div style={{ 
-                  width: '3rem', 
-                  height: '3rem', 
-                  borderRadius: '0.75rem', 
-                  background: `linear-gradient(to bottom right, ${neonGreen}33, ${neonGreen}0d)`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1rem',
-                  transition: 'all 0.3s ease'
-                }}
-                className="group-hover:bg-gradient-to-br group-hover:from-[#00FF5A] group-hover:to-[#00CC47]"
-                >
-                  <feature.icon style={{ width: '1.5rem', height: '1.5rem', color: neonGreen }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem' }}>
+                  <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ffffff' }}>{plan.name}</h3>
+                  {plan.highlighted && <span style={{ color: '#052e16', background: neonGreen, padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700 }}>POPULAR</span>}
                 </div>
-                <h3 style={{ fontSize: '1.125rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>{feature.title}</h3>
-                <p style={{ fontSize: '0.875rem', color: grey }}>{feature.desc}</p>
+                <p style={{ color: '#cbd5e1', marginBottom: '0.9rem', fontSize: '0.9rem' }}>{plan.subtitle}</p>
+                <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
+                  {plan.points.map((point) => (
+                    <div key={point} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#cbd5e1', fontSize: '0.85rem' }}>
+                      <CheckCircle2 style={{ width: '0.85rem', height: '0.85rem', color: neonGreen }} />
+                      {point}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  onClick={plan.name === 'Desk' ? scrollToContact : onGetStarted}
+                  style={{ width: '100%', background: plan.highlighted ? neonGreen : '#111827', color: plan.highlighted ? '#000' : '#fff', border: plan.highlighted ? 'none' : '1px solid #334155' }}
+                >
+                  {plan.cta}
+                </Button>
               </div>
             ))}
           </div>
@@ -542,7 +513,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 borderRadius: '0.75rem',
                 backdropFilter: 'blur(4px)'
               }}>
-                <Mail style={{ width: '2rem', height: '2rem', color: neonGreen, marginBottom: '1rem' }} />
+              <Mail style={{ width: '2rem', height: '2rem', color: neonGreen, marginBottom: '1rem' }} />
                 <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>Email Us</h3>
                 <a href="mailto:contact@hedgeone.com" style={{ color: neonGreen, textDecoration: 'none' }} className="hover:underline">
                   contact@hedgeone.co.in
@@ -739,10 +710,6 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
         @keyframes pulse {
           0%, 100% { opacity: 0.3; }
           50% { opacity: 1; }
-        }
-        @keyframes bounce {
-          0%, 100% { transform: translateX(-50%) translateY(0); }
-          50% { transform: translateX(-50%) translateY(-10px); }
         }
         @media (max-width: 768px) {
           /* Mobile-specific styles */
