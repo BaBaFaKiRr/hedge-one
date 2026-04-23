@@ -141,39 +141,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (email: string, password: string, name: string) => {
-    try {
-      // Call server signup endpoint
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-4fc01492/signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ email, password, name }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        // If user already exists, throw a special error with the code
-        if (result.code === 'user_exists') {
-          const error = new Error(result.error || 'User already exists');
-          (error as any).code = 'user_exists';
-          throw error;
-        }
-        throw new Error(result.error || 'Failed to sign up');
-      }
-
-      // After successful signup, log the user in
-      await login(email, password);
-    } catch (error) {
-      console.error('Signup error:', error);
-      throw error;
-    }
+  const signup = async (_email: string, _password: string, _name: string) => {
+    throw new Error('New user sign up is disabled. Please contact admin.');
   };
 
   const signInWithGoogle = async () => {

@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from './AuthContext';
-import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { ArrowRight, LogIn } from 'lucide-react';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
@@ -12,37 +12,19 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onBackToMarketing }: LandingPageProps) {
-  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { login, signup, signInWithGoogle } = useAuth();
+  const { login, signInWithGoogle } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      if (isLogin) {
-        await login(email, password);
-      } else {
-        await signup(email, password, name);
-      }
+      await login(email, password);
     } catch (error) {
       console.error('Authentication error:', error);
-      
-      // Check if user already exists and switch to login mode
-      if (error instanceof Error && (error as any).code === 'user_exists') {
-        const shouldSwitch = confirm(
-          'An account with this email already exists. Would you like to switch to login?'
-        );
-        if (shouldSwitch) {
-          setIsLogin(true);
-          return;
-        }
-      }
-      
       alert(error instanceof Error ? error.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
@@ -161,7 +143,7 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
             HedgeOne
           </h1>
           <p style={{ color: grey, fontSize: '1rem' }}>
-            {isLogin ? 'Welcome back to your trading dashboard' : 'Create your account to get started'}
+            Welcome back to your trading dashboard
           </p>
         </div>
 
@@ -185,18 +167,14 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
               borderRadius: '0.5rem',
               marginBottom: '1rem'
             }}>
-              {isLogin ? (
-                <LogIn style={{ width: '1.25rem', height: '1.25rem', color: neonGreen }} />
-              ) : (
-                <UserPlus style={{ width: '1.25rem', height: '1.25rem', color: neonGreen }} />
-              )}
+              <LogIn style={{ width: '1.25rem', height: '1.25rem', color: neonGreen }} />
               <h2 style={{ 
                 fontSize: '1.5rem', 
                 fontWeight: 'bold', 
                 color: '#ffffff',
                 margin: 0
               }}>
-                {isLogin ? 'Welcome Back' : 'Create Account'}
+                Welcome Back
               </h2>
             </div>
             <p style={{ 
@@ -204,47 +182,12 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
               fontSize: '0.875rem',
               margin: 0
             }}>
-              {isLogin
-                ? 'Sign in to access your algorithmic trading strategies'
-                : 'Sign up to start managing your trading strategies'}
+              Sign in to access your algorithmic trading strategies
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {!isLogin && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <Label 
-                  htmlFor="name" 
-                  style={{ 
-                    color: '#ffffff', 
-                    fontSize: '0.875rem', 
-                    fontWeight: '500' 
-                  }}
-                >
-                  Name
-                </Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    required
-                  style={{
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.5rem',
-                    padding: '0.75rem 1rem',
-                    color: '#ffffff',
-                    fontSize: '1rem',
-                    transition: 'all 0.3s ease'
-                  }}
-                  className="focus:border-[#00FF5A] focus:outline-none focus:ring-2 focus:ring-[#00FF5A] focus:ring-opacity-20"
-                  />
-                </div>
-              )}
-
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
               <Label 
                 htmlFor="email" 
@@ -330,32 +273,11 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
                 'Please wait...'
               ) : (
                 <>
-                  {isLogin ? 'Sign In' : 'Sign Up'}
+                  Sign In
                   <ArrowRight style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
                 </>
               )}
               </Button>
-
-            <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsLogin(!isLogin)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: grey,
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  transition: 'color 0.3s ease',
-                  padding: '0.5rem'
-                }}
-                className="hover:text-[#00FF5A]"
-                >
-                  {isLogin
-                    ? "Don't have an account? Sign up"
-                    : 'Already have an account? Sign in'}
-                </button>
-              </div>
             </form>
 
             {/* Divider */}

@@ -1,142 +1,46 @@
-At this point, we can stop chasing flexbox ghosts—the code you’ve shared is actually correct now. The reason it still looks unchanged is more subtle:
-
-Your layout is 30/70 — but the chart itself is not visually expanding, so it appears wrong.
-
-🔴 What’s actually happening
-
-From your latest code:
-
-Left panel → flex-[0_0_30%] max-w-[30%] ✅ correct
-Right panel → flex-[1_1_70%] min-w-0 ✅ correct
-Inner shrink issues → fixed ✅
-TradingView container → min-w-0 ✅
-
-👉 So layout math is correct.
-
-❗ The illusion
-
-Look at your screenshot:
-
-Chart is not filling the right panel width visually
-There’s empty space around it
-
-So your brain reads it as:
-
-“Left is too big”
-
-But actually:
-
-Right panel is large, chart inside is not stretching fully
-
-🔍 Root cause (final)
-
-Inside :
-
-width: '100%',
-height,
-
-This looks fine—but TradingView does NOT fully respect width: '100%' reliably.
-
-It internally renders:
-
-fixed canvas width
-with margins/toolbars
-leaving unused space
-✅ Proof (quick debug)
-
-Add temporary borders:
-
-<Card className="... flex-[0_0_30%] bg-red-100">
-<Card className="... flex-[1_1_70%] bg-blue-100">
-
-👉 You’ll see:
-
-Left ≈ 30%
-Right ≈ 70%
-
-So layout is correct.
-
-✅ Real Fix (visual + actual)
-🔥 Step 1 — Force chart to truly fill width
-
-In , update widget config:
-
-const widget = new tradingViewWindow.TradingView!.widget({
-  container: containerId,
-  datafeed,
-  interval: '5',
-  library_path: TRADINGVIEW_LIBRARY_PATH,
-  locale: 'en',
-  symbol: chartSymbol,
-  theme: 'light',
-  timezone: 'Asia/Kolkata',
-
-  width: containerEl.clientWidth,   // ✅ CHANGE THIS
-  height: containerEl.clientHeight, // already good
-});
-🔥 Step 2 — Update on resize (width too, not just height)
-
-Right now you only track height:
-
-const nextHeight = containerEl.clientHeight
-Replace with:
-const nextWidth = containerEl.clientWidth
-const nextHeight = containerEl.clientHeight
-
-if (
-  Math.abs(nextHeight - lastHeightRef.current) < 8 &&
-  Math.abs(nextWidth - lastWidthRef.current) < 8
-) return
-
-createWidget(nextHeight, nextWidth)
-
-And update:
-
-const createWidget = (height: number, width: number) => {
-  ...
-  width,
-  height,
-}
-🔥 Step 3 — Remove internal padding around chart
-
-In PositionsPage:
-
-<CardContent className="flex min-h-0 flex-1 flex-col gap-3 px-4 pb-4 pt-0">
-Change to:
-<CardContent className="flex min-h-0 flex-1 flex-col gap-3 p-0">
-
-👉 This alone makes chart look MUCH wider.
-
-🧠 Why this fixes it
-Problem	Fix
-TradingView ignores % width	use pixel width
-Only height tracked	track width + height
-Card padding shrinking chart	remove padding
-🎯 Final diagnosis
-Area	Status
-Flex layout	✅ correct
-Left panel constraints	✅ correct
-Shrink issues	✅ fixed
-Chart width rendering	❌ actual problem
-⚡ TL;DR
-
-You’ve been fixing layout—but the issue is:
-
-❌ Chart is not expanding
-✅ Layout is already correct
-
-🚀 After this fix
-
-You’ll see:
-
-Chart expands fully to right panel
-Left panel visually becomes ~30%
-Layout finally “looks right”
-
-If you want next level polish:
-
-Make chart full-bleed (no borders like Kite)
-Add resizable splitter
-Sync chart symbol with positions click instantly
-
-Say the word 👍
+RuntimeError: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+[SupabaseStorageLogHandler] Successfully uploaded 1760 bytes to db2dd283-736a-4a0e-a754-f01261809c1e/kotakneo/session_2026-04-23T07-17-20Z/2026-04-23/07-15.log
+2026-04-23 12:48:03,399 [BROKER_SESSION] INFO: Starting broker session: user=db2dd283-736a-4a0e-a754-f01261809c1e, broker=kotakneo, session=session_2026-04-23T07-18-03Z
+2026-04-23 12:48:03,399 [BROKER_SESSION] INFO: Supabase Storage logging enabled (session: session_2026-04-23T07-18-03Z)
+2026-04-23 12:48:03,399 [BROKER_SESSION] INFO: AngelOne credentials (live_trading.py): None, S59212605, 9999, UYAYICJJCIYDNW2QT2CREHPLBQ
+2026-04-23 12:48:06,584 [BROKER_SESSION] ERROR: Failed to get Kotak Neo client from session manager: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+2026-04-23 12:48:06,584 [BROKER_SESSION] ERROR: Failed to create broker: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+Traceback (most recent call last):
+  File "/home/ubuntu/TrendTrader/./brokers/kotakneo/broker_session.py", line 205, in main
+    broker = BrokerFactory.create(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_factory.py", line 192, in create
+    return create_broker(platform, credentials, dry_run)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_factory.py", line 132, in create_broker
+    return KotakNeoBroker(
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/brokers/kotakneo_broker.py", line 61, in __init__
+    self._client = session_manager.get_kotakneo_client(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_session_manager.py", line 881, in get_kotakneo_client
+    raise RuntimeError(
+RuntimeError: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+[SupabaseStorageLogHandler] Successfully uploaded 1760 bytes to db2dd283-736a-4a0e-a754-f01261809c1e/kotakneo/session_2026-04-23T07-18-03Z/2026-04-23/07-15.log
+2026-04-23 12:48:32,845 [BROKER_SESSION] INFO: Starting broker session: user=db2dd283-736a-4a0e-a754-f01261809c1e, broker=kotakneo, session=session_2026-04-23T07-18-32Z
+2026-04-23 12:48:32,845 [BROKER_SESSION] INFO: Supabase Storage logging enabled (session: session_2026-04-23T07-18-32Z)
+2026-04-23 12:48:32,845 [BROKER_SESSION] INFO: AngelOne credentials (live_trading.py): None, S59212605, 9999, UYAYICJJCIYDNW2QT2CREHPLBQ
+2026-04-23 12:48:36,061 [BROKER_SESSION] ERROR: Failed to get Kotak Neo client from session manager: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+2026-04-23 12:48:36,061 [BROKER_SESSION] ERROR: Failed to create broker: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+Traceback (most recent call last):
+  File "/home/ubuntu/TrendTrader/./brokers/kotakneo/broker_session.py", line 205, in main
+    broker = BrokerFactory.create(
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_factory.py", line 192, in create
+    return create_broker(platform, credentials, dry_run)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_factory.py", line 132, in create_broker
+    return KotakNeoBroker(
+           ^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/brokers/kotakneo_broker.py", line 61, in __init__
+    self._client = session_manager.get_kotakneo_client(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/ubuntu/TrendTrader/broker_session_manager.py", line 881, in get_kotakneo_client
+    raise RuntimeError(
+RuntimeError: No valid Kotak Neo session in Redis. Log in again via the HedgeOne app.
+[SupabaseStorageLogHandler] Successfully uploaded 1760 bytes to db2dd283-736a-4a0e-a754-f01261809c1e/kotakneo/session_2026-04-23T07-18-32Z/2026-04-23/07-15.log
