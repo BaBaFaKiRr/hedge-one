@@ -1,28 +1,31 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from './ui/button';
-import { 
+import {
   CheckCircle2,
-  Rocket,
-  Cpu,
-  Shield,
-  TrendingUp,
-  Activity,
-  Workflow,
-  Layers,
-  LineChart,
-  Bell,
-  Server,
-  Gauge,
   ArrowRight,
   MessageCircle,
   Mail,
-  Send
+  Phone,
+  Send,
+  LineChart,
+  Building2,
+  Globe,
+  Smartphone,
+  Cloud,
+  Code2,
+  Sparkles,
+  Users,
+  LogIn,
+  Package,
+  BarChart3,
+  HeadphonesIcon,
 } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { toast } from 'sonner';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
+import { marketingTheme as theme, marketingInputStyle as inputStyle } from './marketingTheme';
 
 interface MarketingLandingPageProps {
   onGetStarted: () => void;
@@ -33,24 +36,20 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const supabase = useMemo(() => {
-    return createClient(
-      `https://${projectId}.supabase.co`,
-      publicAnonKey
-    );
+    return createClient(`https://${projectId}.supabase.co`, publicAnonKey);
   }, []);
 
   const sendTelegramAlert = async (name: string, email: string, phone: string, message: string) => {
-    // Get credentials from environment variables
     const botToken = (import.meta as any).env?.VITE_TELEGRAM_BOT_TOKEN;
     const chatId = (import.meta as any).env?.VITE_TELEGRAM_CHAT_ID;
-    
-    // Validate that credentials are set
+
     if (!botToken || !chatId) {
-      console.error('Telegram credentials are not configured. Please set VITE_TELEGRAM_BOT_TOKEN and VITE_TELEGRAM_CHAT_ID in your environment variables.');
-      return; // Silently fail - don't block form submission
+      console.error('Telegram credentials are not configured.');
+      return;
     }
-    
-    const telegramMessage = `🔔 New Inquiry Received\n\n` +
+
+    const telegramMessage =
+      `🔔 New Inquiry Received\n\n` +
       `👤 Name: ${name}\n` +
       `📧 Email: ${email}\n` +
       `📱 Phone: ${phone || 'Not provided'}\n` +
@@ -58,37 +57,23 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       `⏰ Time: ${new Date().toLocaleString()}`;
 
     try {
-      const response = await fetch(
-        `https://api.telegram.org/bot${botToken}/sendMessage`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: telegramMessage,
-            parse_mode: 'HTML',
-          }),
-        }
-      );
+      const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: chatId, text: telegramMessage, parse_mode: 'HTML' }),
+      });
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         console.error('Telegram API error:', errorData);
-        // Don't throw - we still want to save to Supabase even if Telegram fails
       }
     } catch (error) {
       console.error('Failed to send Telegram alert:', error);
-      // Don't throw - we still want to save to Supabase even if Telegram fails
     }
   };
 
-  const scrollToContact = () => {
-    const contactSection = document.getElementById('contact-section');
-    if (contactSection) {
-      contactSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -96,29 +81,23 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
     setIsSubmitting(true);
 
     try {
-      // Convert phone to number if provided, otherwise null
-      const phoneNumber = formData.phone.trim() ? parseInt(formData.phone.replace(/\D/g, ''), 10) : null;
+      const phoneNumber = formData.phone.trim()
+        ? parseInt(formData.phone.replace(/\D/g, ''), 10)
+        : null;
 
-      // Save to Supabase
-      const { error: supabaseError } = await supabase
-        .from('inquiry')
-        .insert([
-          {
-            name: formData.name,
-            email: formData.email,
-            phone: phoneNumber,
-            message: formData.message,
-          },
-        ]);
+      const { error: supabaseError } = await supabase.from('inquiry').insert([
+        {
+          name: formData.name,
+          email: formData.email,
+          phone: phoneNumber,
+          message: formData.message,
+        },
+      ]);
 
-      if (supabaseError) {
-        throw supabaseError;
-      }
+      if (supabaseError) throw supabaseError;
 
-      // Send Telegram alert
       await sendTelegramAlert(formData.name, formData.email, formData.phone, formData.message);
 
-      // Success
       toast.success('Thank you for your message! We will get back to you soon.');
       setFormData({ name: '', email: '', phone: '', message: '' });
     } catch (error: any) {
@@ -129,446 +108,589 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
     }
   };
 
-  const neonGreen = '#00FF5A';
-  const darkGreen = '#00CC47';
-  const grey = '#A9A9A9';
-  const darkBg = '#0a0a0a';
-  const cardBg = 'rgba(7, 7, 7, 0.75)';
-
-  const steps = [
+  const products = [
     {
-      title: 'Connect Your Broker',
+      id: 'algo-trader',
+      name: 'HedgeOne Algo-trader',
+      tagline: 'Algorithmic trading, curated and hosted',
       description:
-        'Securely plug in Zerodha and other supported broker accounts so HedgeOne can execute with your permissions.',
-      icon: Shield,
+        'A market securities trading algorithm curating and hosting service. Deploy strategies, connect brokers, and monitor execution from a unified console.',
+      icon: LineChart,
+      accent: theme.primary,
+      features: ['Strategy curation & hosting', 'Broker integrations', 'Live execution monitoring', 'Risk-aware deployment'],
+      showConsoleLogin: true,
     },
     {
-      title: 'Pick or Build Strategy',
+      id: 'lejer',
+      name: 'LEJER Business Manager',
+      tagline: 'AI-powered operations for modern teams',
       description:
-        'Launch a proven in-house strategy or request a custom ruleset tuned to your risk profile and market preferences.',
-      icon: Workflow,
-    },
-    {
-      title: 'Deploy and Monitor',
-      description:
-        'Go live instantly with live positions, TradingView charts, logs, and broker-aware execution guardrails.',
-      icon: Rocket,
+        'An AI-based business management platform combining ERP, inventory management, and CRM in one cohesive workspace.',
+      icon: Building2,
+      accent: theme.secondary,
+      features: ['ERP workflows', 'Inventory management', 'CRM & customer pipeline', 'AI-assisted insights'],
+      showConsoleLogin: false,
     },
   ];
 
-  const useCases = [
-    'Index breakout automation',
-    'Stock intraday signal execution',
-    'Live portfolio supervision',
-    'PnL and risk tracking',
-    'Manual + automated hybrid trading',
-    'Daily tradebook analytics',
+  const services = [
+    {
+      title: 'Web Applications',
+      description: 'Responsive, scalable web apps tailored to your workflows and brand.',
+      icon: Globe,
+    },
+    {
+      title: 'Mobile Applications',
+      description: 'Native and cross-platform mobile experiences for iOS and Android.',
+      icon: Smartphone,
+    },
+    {
+      title: 'Cloud Applications',
+      description: 'Secure, cloud-native systems built for reliability and growth.',
+      icon: Cloud,
+    },
+    {
+      title: 'Custom Software',
+      description: 'Bespoke solutions designed around your business processes and goals.',
+      icon: Code2,
+    },
   ];
 
-  const coreFeatures = [
-    { title: 'Strategy Engine', desc: 'Rule-driven execution with configurable entries, exits, and position sizing.', icon: Cpu },
-    { title: 'Real-time Monitoring', desc: 'Observe live positions, quotes, chart overlays, and execution states.', icon: Activity },
-    { title: 'Risk Controls', desc: 'Use hard stop conditions, quantity controls, and strategy-level safeguards.', icon: Shield },
-    { title: 'TradingView Context', desc: 'Read market context with integrated charts where positions and entries align.', icon: LineChart },
-    { title: 'Broker Reliability', desc: 'Broker-aware workflows with error handling and session management support.', icon: Server },
-    { title: 'Signal-to-Execution Pipeline', desc: 'Move from idea to deployed strategy without rebuilding infrastructure.', icon: Layers },
+  const strengths = [
+    { label: 'End-to-end delivery', icon: Package },
+    { label: 'Business-first consulting', icon: Users },
+    { label: 'Modern tech stack', icon: Sparkles },
+    { label: 'Ongoing support', icon: HeadphonesIcon },
   ];
 
-  const planCards = [
-    {
-      name: 'Starter',
-      subtitle: 'For disciplined solo traders',
-      points: ['1 live account', '2 active strategies', 'Dashboard + tradebook + positions', 'Email + Telegram support'],
-      cta: 'Start with Starter',
-    },
-    {
-      name: 'Pro',
-      subtitle: 'For active intraday operators',
-      points: ['Up to 3 accounts', 'Custom strategy onboarding', 'Priority infra monitoring', 'Advanced analytics and logs'],
-      cta: 'Choose Pro',
-      highlighted: true,
-    },
-    {
-      name: 'Desk',
-      subtitle: 'For small prop teams',
-      points: ['Multi-user collaboration', 'Dedicated deployment setup', 'Tailored risk controls', 'Hands-on integration support'],
-      cta: 'Talk to Us',
-    },
-  ];
+  const navLinkStyle: React.CSSProperties = {
+    color: theme.textMuted,
+    fontSize: '0.9rem',
+    cursor: 'pointer',
+    background: 'none',
+    border: 'none',
+    padding: 0,
+    fontFamily: 'inherit',
+  };
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#000000', color: '#ffffff', overflowX: 'hidden' }}>
+    <div style={{ minHeight: '100vh', backgroundColor: theme.bg, color: theme.text, overflowX: 'hidden' }}>
       {/* Navigation */}
-      <nav style={{ 
-        position: 'fixed', 
-        top: 0, 
-        width: '100%', 
-        zIndex: 50, 
-        backgroundColor: 'rgba(0, 0, 0, 0.8)', 
-        backdropFilter: 'blur(12px)',
-        borderBottom: `1px solid ${neonGreen}33`
-      }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
+      <nav
+        style={{
+          position: 'fixed',
+          top: 0,
+          width: '100%',
+          zIndex: 50,
+          backgroundColor: theme.navBg,
+          backdropFilter: 'blur(16px)',
+          borderBottom: `1px solid ${theme.border}`,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: '1200px',
+            margin: '0 auto',
+            padding: '0.9rem 1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+          }}
+        >
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <img 
-              src={appLogo} 
-              alt="HedgeOne Logo" 
-              style={{ 
-                height: '2.5rem', 
-                width: 'auto',
-                filter: `drop-shadow(0 0 10px ${neonGreen}40)`
-              }}
-            />
-            <span style={{ 
-              fontSize: 'clamp(1rem, 4vw, 1.25rem)', 
-              fontWeight: 'bold',
-              background: `linear-gradient(to right, #ffffff, ${neonGreen})`,
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              backgroundClip: 'text'
-            }}>
+            <img src={appLogo} alt="HedgeOne Logo" style={{ height: '2.25rem', width: 'auto' }} />
+            <span style={{ fontSize: 'clamp(1rem, 4vw, 1.2rem)', fontWeight: 700, color: theme.text }}>
               HedgeOne
             </span>
           </div>
-          <Button
-            onClick={onGetStarted}
-            style={{ 
-              backgroundColor: neonGreen, 
-              color: '#000000',
-              border: 'none',
-              fontSize: 'clamp(0.875rem, 3vw, 1rem)',
-              padding: '0.5rem 1rem'
-            }}
-            className="hover:opacity-90 transition-all"
-          >
-            Get Started
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => scrollTo('products')} style={navLinkStyle}>
+              Products
+            </button>
+            <button type="button" onClick={() => scrollTo('services')} style={navLinkStyle}>
+              Services
+            </button>
+            <button type="button" onClick={() => scrollTo('contact-section')} style={navLinkStyle}>
+              Contact
+            </button>
+          </div>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section style={{ 
-        position: 'relative', 
-        minHeight: '88vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        paddingTop: '5rem',
-        overflow: 'hidden'
-      }}>
-        {/* Animated Background */}
-        <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-          <div style={{ 
-            position: 'absolute', 
-            inset: 0, 
-            background: `linear-gradient(to bottom right, #000000, ${darkBg}, #000000)`
-          }} />
-          <div style={{ position: 'absolute', inset: 0, background: `radial-gradient(circle at 20% 20%, ${neonGreen}11, transparent 35%), radial-gradient(circle at 80% 30%, #22d3ee1a, transparent 35%), radial-gradient(circle at 50% 80%, #7c3aed22, transparent 35%)` }} />
+      {/* Hero */}
+      <section
+        style={{
+          position: 'relative',
+          minHeight: '92vh',
+          display: 'flex',
+          alignItems: 'center',
+          paddingTop: '5.5rem',
+          overflow: 'hidden',
+        }}
+      >
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: `radial-gradient(ellipse 80% 50% at 50% -20%, rgba(99, 102, 241, 0.12), transparent),
+                radial-gradient(ellipse 60% 40% at 100% 50%, rgba(245, 158, 11, 0.1), transparent),
+                radial-gradient(ellipse 50% 30% at 0% 80%, rgba(20, 184, 166, 0.08), transparent)`,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              backgroundImage: `linear-gradient(${theme.border} 1px, transparent 1px),
+                linear-gradient(90deg, ${theme.border} 1px, transparent 1px)`,
+              backgroundSize: '64px 64px',
+              opacity: 0.55,
+            }}
+          />
         </div>
 
-        <div style={{ position: 'relative', zIndex: 10, maxWidth: '1280px', margin: '0 auto', padding: '0 1.5rem', textAlign: 'center' }}>
-          <div style={{ maxWidth: '56rem', margin: '0 auto' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', border: `1px solid ${neonGreen}55`, borderRadius: '999px', padding: '0.4rem 0.9rem', marginBottom: '1.25rem', background: `${neonGreen}14` }}>
-              <Bell style={{ width: '0.9rem', height: '0.9rem', color: neonGreen }} />
-              <span style={{ color: '#e2e8f0', fontSize: '0.8rem' }}>Now live - manage your algo desk from one console</span>
-            </div>
-            <h1 style={{ 
-              fontSize: 'clamp(2.5rem, 5vw, 4.5rem)', 
-              fontWeight: 'bold', 
-              lineHeight: '1.2',
-              marginBottom: '2rem'
-            }}>
-              <span style={{ display: 'block' }}>Your Trading Assistant,</span>
-              <span style={{ 
-                display: 'block',
-                background: `linear-gradient(to right, #ffffff, ${neonGreen}, #ffffff)`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                running your strategy stack.
-              </span>
-            </h1>
-            <p style={{ 
-              fontSize: 'clamp(1.125rem, 2vw, 1.5rem)', 
-              color: grey, 
-              maxWidth: '42rem', 
-              margin: '0 auto 2rem',
-              lineHeight: '1.6'
-            }}>
-              HedgeOne helps you deploy, monitor, and improve algorithmic strategies without building infra from scratch. Plug in a broker, activate your strategy, and track execution live.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', justifyContent: 'center', alignItems: 'center', paddingTop: '1rem' }}>
-              <Button
-                onClick={onGetStarted}
-                size="lg"
-                style={{ 
-                  backgroundColor: neonGreen, 
-                  color: '#000000',
-                  fontSize: '1.125rem',
-                  padding: '1.5rem 2rem',
-                  borderRadius: '0.75rem',
-                  border: 'none'
-                }}
-                className="hover:opacity-90 hover:scale-105 transition-all"
-              >
-                Launch Dashboard
-                <ArrowRight style={{ marginLeft: '0.5rem', width: '1.25rem', height: '1.25rem' }} />
-              </Button>
-              <Button
-                onClick={scrollToContact}
-                size="lg"
-                variant="outline"
-                style={{ 
-                  border: `2px solid ${neonGreen}`, 
-                  color: neonGreen,
-                  backgroundColor: 'transparent',
-                  fontSize: '1.125rem',
-                  padding: '1.5rem 2rem',
-                  borderRadius: '0.75rem'
-                }}
-                className="hover:bg-opacity-10 transition-all"
-              >
-                Talk to Strategy Team
-              </Button>
-            </div>
+        <div style={{ position: 'relative', zIndex: 10, maxWidth: '1200px', margin: '0 auto', padding: '2rem 1.5rem 4rem' }}>
+          <div
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              border: `1px solid ${theme.borderAccent}`,
+              borderRadius: '999px',
+              padding: '0.35rem 0.9rem',
+              marginBottom: '1.5rem',
+              background: 'rgba(99, 102, 241, 0.08)',
+            }}
+          >
+            <Sparkles style={{ width: '0.85rem', height: '0.85rem', color: theme.primaryLight }} />
+            <span style={{ color: theme.textMuted, fontSize: '0.8rem', letterSpacing: '0.02em' }}>
+              Hedgeone Consultants LLP
+            </span>
           </div>
-        </div>
-      </section>
 
-      {/* Gradient Divider */}
-      <div style={{ 
-        height: '1px', 
-        background: `linear-gradient(to right, transparent, ${neonGreen}, transparent)`,
-        opacity: 0.5
-      }} />
+          <h1
+            style={{
+              fontSize: 'clamp(2.25rem, 5.5vw, 3.75rem)',
+              fontWeight: 700,
+              lineHeight: 1.15,
+              marginBottom: '1.25rem',
+              maxWidth: '52rem',
+              color: theme.text,
+            }}
+          >
+            <span style={{ display: 'block' }}>Software solutions &amp; consultancy</span>
+            <span style={{ display: 'block', color: theme.primary }}>built for your business</span>
+          </h1>
 
-      {/* How It Works */}
-      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', position: 'relative' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Three steps. <span style={{ color: neonGreen }}>That&apos;s it.</span>
-            </h2>
-            <p style={{ color: grey, fontSize: '1.05rem', maxWidth: '700px', margin: '0 auto' }}>
-              HedgeOne is designed so execution teams can go live quickly while still retaining strong controls.
-            </p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '1rem' }}>
-            {steps.map((step, index) => (
-              <div key={step.title} style={{ background: cardBg, border: `1px solid ${neonGreen}2e`, borderRadius: '1rem', padding: '1.25rem' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <div style={{ width: '2.4rem', height: '2.4rem', borderRadius: '0.7rem', background: `${neonGreen}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <step.icon style={{ width: '1.1rem', height: '1.1rem', color: neonGreen }} />
-                  </div>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>0{index + 1}</span>
-                </div>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '0.4rem' }}>{step.title}</h3>
-                <p style={{ color: grey, fontSize: '0.9rem', lineHeight: 1.6 }}>{step.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+          <p
+            style={{
+              fontSize: 'clamp(1rem, 2vw, 1.2rem)',
+              color: theme.textMuted,
+              maxWidth: '40rem',
+              lineHeight: 1.7,
+              marginBottom: '2rem',
+            }}
+          >
+            We develop software products and deliver consultancy for businesses and individuals — from
+            algorithmic trading platforms to AI-powered business management, plus custom web, mobile, and
+            cloud applications tailored to your needs.
+          </p>
 
-      {/* Use Cases + Features */}
-      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
-            <div style={{ background: cardBg, border: `1px solid ${neonGreen}30`, borderRadius: '1rem', padding: '1.4rem' }}>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.8rem' }}>Put your algo stack to work</h3>
-              <p style={{ color: grey, marginBottom: '1rem' }}>
-                Run deployment-grade workflows without managing servers, websockets, or broker session complexity.
-              </p>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.55rem' }}>
-                {useCases.map((item) => (
-                  <span key={item} style={{ border: `1px solid ${neonGreen}45`, color: '#d1fae5', borderRadius: '999px', padding: '0.3rem 0.75rem', fontSize: '0.8rem' }}>
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div style={{ background: cardBg, border: `1px solid #334155`, borderRadius: '1rem', padding: '1.4rem' }}>
-              <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.8rem' }}>Why teams choose HedgeOne</h3>
-              <div style={{ display: 'grid', gap: '0.65rem' }}>
-                {['Transparent strategy lifecycle', 'Live execution visibility', 'Broker-level resilience', 'Fast iteration on custom ideas'].map((item) => (
-                  <div key={item} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#cbd5e1', fontSize: '0.9rem' }}>
-                    <CheckCircle2 style={{ width: '0.95rem', height: '0.95rem', color: neonGreen }} />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
+            <Button
+              onClick={() => scrollTo('products')}
+              size="lg"
+              style={{
+                background: theme.gradient,
+                color: '#fff',
+                border: 'none',
+                fontSize: '1rem',
+                padding: '0.9rem 1.5rem',
+                borderRadius: '0.6rem',
+              }}
+              className="hover:opacity-90 transition-all"
+            >
+              Explore Products
+              <ArrowRight style={{ marginLeft: '0.5rem', width: '1.1rem', height: '1.1rem' }} />
+            </Button>
+            <Button
+              onClick={() => scrollTo('contact-section')}
+              size="lg"
+              variant="outline"
+              style={{
+                border: `1px solid ${theme.border}`,
+                color: theme.text,
+                backgroundColor: theme.bgElevated,
+                fontSize: '1rem',
+                padding: '0.9rem 1.5rem',
+                borderRadius: '0.6rem',
+              }}
+              className="hover:bg-slate-50 transition-all"
+            >
+              Start a Project
+            </Button>
           </div>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 3rem)' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Core <span style={{ color: neonGreen }}>Capabilities</span>
-            </h2>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
-            {coreFeatures.map((feature) => (
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+              gap: '1rem',
+              marginTop: '3.5rem',
+              maxWidth: '36rem',
+            }}
+          >
+            {strengths.map(({ label, icon: Icon }) => (
               <div
-                key={feature.title}
+                key={label}
                 style={{
-                  position: 'relative',
-                  padding: '1.5rem',
-                  backgroundColor: cardBg,
-                  border: `1px solid ${neonGreen}33`,
-                  borderRadius: '0.75rem',
-                  backdropFilter: 'blur(4px)',
-                  transition: 'all 0.3s ease'
-                }}
-                className="hover:border-[#00FF5A] hover:shadow-[0_0_30px_rgba(0,255,90,0.4)] hover:-translate-y-2"
-              >
-                <div style={{ 
-                  width: '3rem', 
-                  height: '3rem', 
-                  borderRadius: '0.75rem', 
-                  background: `linear-gradient(to bottom right, ${neonGreen}, ${darkGreen})`,
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
-                  marginBottom: '1rem',
-                  transition: 'transform 0.3s ease'
+                  gap: '0.6rem',
+                  padding: '0.75rem 1rem',
+                  background: theme.bgElevated,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '0.6rem',
+                  boxShadow: theme.cardShadow,
                 }}
-                className="group-hover:scale-110"
-                >
-                  <feature.icon style={{ width: '1.5rem', height: '1.5rem', color: '#000000' }} />
-                </div>
-                <h3 style={{ fontSize: '1.15rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>{feature.title}</h3>
-                <p style={{ color: grey, fontSize: '0.875rem', lineHeight: '1.7' }}>{feature.desc}</p>
+              >
+                <Icon style={{ width: '1rem', height: '1rem', color: theme.primaryLight, flexShrink: 0 }} />
+                <span style={{ fontSize: '0.8rem', color: theme.textMuted }}>{label}</span>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Plans */}
-      <section style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 4rem)' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Choose your <span style={{ color: neonGreen }}>deployment path</span>
+      {/* Products */}
+      <section id="products" style={{ padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 'clamp(2.5rem, 5vw, 3.5rem)' }}>
+            <p style={{ color: theme.primaryLight, fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+              Our Products
+            </p>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700, marginBottom: '0.75rem' }}>
+              Platforms we build and operate
             </h2>
-            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
-              Start with a managed setup and scale as your strategy throughput and capital grow.
+            <p style={{ color: theme.textMuted, maxWidth: '36rem', margin: '0 auto', lineHeight: 1.6 }}>
+              Purpose-built software for trading desks and growing businesses.
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '1.5rem' }}>
-            {planCards.map((plan) => (
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))',
+              gap: '1.5rem',
+            }}
+          >
+            {products.map((product) => (
               <div
-                key={plan.name}
+                key={product.id}
                 style={{
-                  padding: '1.5rem',
-                  backgroundColor: plan.highlighted ? `${neonGreen}14` : cardBg,
-                  border: plan.highlighted ? `1px solid ${neonGreen}` : `1px solid ${neonGreen}33`,
-                  borderRadius: '0.75rem',
-                  backdropFilter: 'blur(4px)',
-                  transition: 'all 0.3s ease'
+                  padding: '1.75rem',
+                  background: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '1rem',
+                  boxShadow: theme.cardShadow,
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
-                className="hover:border-[#00FF5A] hover:shadow-[0_0_20px_rgba(0,255,90,0.3)]"
+                className="hover:border-indigo-400/50 hover:shadow-md transition-all"
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.7rem' }}>
-                  <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#ffffff' }}>{plan.name}</h3>
-                  {plan.highlighted && <span style={{ color: '#052e16', background: neonGreen, padding: '0.18rem 0.55rem', borderRadius: '999px', fontSize: '0.7rem', fontWeight: 700 }}>POPULAR</span>}
+                <div
+                  style={{
+                    width: '3rem',
+                    height: '3rem',
+                    borderRadius: '0.75rem',
+                    background: `${product.accent}22`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '1.25rem',
+                  }}
+                >
+                  <product.icon style={{ width: '1.5rem', height: '1.5rem', color: product.accent }} />
                 </div>
-                <p style={{ color: '#cbd5e1', marginBottom: '0.9rem', fontSize: '0.9rem' }}>{plan.subtitle}</p>
-                <div style={{ display: 'grid', gap: '0.5rem', marginBottom: '1rem' }}>
-                  {plan.points.map((point) => (
-                    <div key={point} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#cbd5e1', fontSize: '0.85rem' }}>
-                      <CheckCircle2 style={{ width: '0.85rem', height: '0.85rem', color: neonGreen }} />
-                      {point}
+
+                <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.35rem' }}>{product.name}</h3>
+                <p style={{ color: product.accent, fontSize: '0.85rem', fontWeight: 500, marginBottom: '0.75rem' }}>
+                  {product.tagline}
+                </p>
+                <p style={{ color: theme.textMuted, fontSize: '0.95rem', lineHeight: 1.65, marginBottom: '1.25rem', flex: 1 }}>
+                  {product.description}
+                </p>
+
+                <div style={{ display: 'grid', gap: '0.45rem', marginBottom: '1.5rem' }}>
+                  {product.features.map((feature) => (
+                    <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: theme.textMuted }}>
+                      <CheckCircle2 style={{ width: '0.9rem', height: '0.9rem', color: product.accent, flexShrink: 0 }} />
+                      {feature}
                     </div>
                   ))}
                 </div>
-                <Button
-                  onClick={plan.name === 'Desk' ? scrollToContact : onGetStarted}
-                  style={{ width: '100%', background: plan.highlighted ? neonGreen : '#111827', color: plan.highlighted ? '#000' : '#fff', border: plan.highlighted ? 'none' : '1px solid #334155' }}
-                >
-                  {plan.cta}
-                </Button>
+
+                {product.showConsoleLogin ? (
+                  <>
+                    <Button
+                      onClick={onGetStarted}
+                      style={{
+                        width: '100%',
+                        background: theme.gradient,
+                        color: '#fff',
+                        border: 'none',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '0.5rem',
+                        fontWeight: 600,
+                      }}
+                      className="hover:opacity-90 transition-all"
+                    >
+                      <LogIn style={{ marginRight: '0.5rem', width: '1rem', height: '1rem' }} />
+                      Log in to Console
+                    </Button>
+                    <p style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: theme.textMuted, textAlign: 'center' }}>
+                      Charts Powered by{' '}
+                      <a
+                        href="https://www.tradingview.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ color: theme.primaryLight, textDecoration: 'none' }}
+                        className="hover:underline"
+                      >
+                        TradingView
+                      </a>
+                    </p>
+                  </>
+                ) : (
+                  <Button
+                    onClick={() => scrollTo('contact-section')}
+                    variant="outline"
+                    style={{
+                      width: '100%',
+                      border: `1px solid ${theme.secondary}55`,
+                      color: theme.secondaryMuted,
+                      background: 'rgba(245, 158, 11, 0.1)',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '0.5rem',
+                    }}
+                    className="hover:bg-amber-500/10 transition-all"
+                  >
+                    Request a Demo
+                    <ArrowRight style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
+                  </Button>
+                )}
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Contact / CTA Section */}
-      <section id="contact-section" style={{ padding: 'clamp(3rem, 8vw, 6rem) 1.5rem', background: `linear-gradient(to bottom, #000000, ${darkBg})` }}>
+      {/* Services */}
+      <section
+        id="services"
+        style={{
+          padding: 'clamp(4rem, 8vw, 6rem) 1.5rem',
+          background: `linear-gradient(180deg, ${theme.bgSubtle} 0%, ${theme.bg} 50%, ${theme.bgSubtle} 100%)`,
+        }}
+      >
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '2.5rem', alignItems: 'start', marginBottom: '2.5rem' }}>
+            <div>
+              <p style={{ color: theme.accentTeal, fontSize: '0.85rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '0.5rem' }}>
+                Consultancy Services
+              </p>
+              <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700, marginBottom: '1rem' }}>
+                Software crafted to your specifications
+              </h2>
+              <p style={{ color: theme.textMuted, lineHeight: 1.7, marginBottom: '1.25rem' }}>
+                Our services center on curating web apps, mobile apps, cloud applications, and any software
+                as per client needs — from discovery and architecture through delivery and support.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {['Discovery & requirements', 'Design & architecture', 'Build & deployment', 'Maintenance & iteration'].map((step, i) => (
+                  <div key={step} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <span
+                      style={{
+                        width: '1.75rem',
+                        height: '1.75rem',
+                        borderRadius: '0.4rem',
+                        background: theme.gradient,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {i + 1}
+                    </span>
+                    <span style={{ color: theme.textMuted, fontSize: '0.9rem' }}>{step}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1rem',
+              }}
+            >
+              {services.map((service) => (
+                <div
+                  key={service.title}
+                  style={{
+                    padding: '1.25rem',
+                    background: theme.bgCard,
+                    border: `1px solid ${theme.border}`,
+                    borderRadius: '0.75rem',
+                    boxShadow: theme.cardShadow,
+                  }}
+                  className="hover:border-teal-500/40 hover:shadow-md transition-all"
+                >
+                  <service.icon style={{ width: '1.5rem', height: '1.5rem', color: theme.accentTeal, marginBottom: '0.75rem' }} />
+                  <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.4rem' }}>{service.title}</h3>
+                  <p style={{ color: theme.textMuted, fontSize: '0.85rem', lineHeight: 1.55 }}>{service.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: '1.5rem 2rem',
+              background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.08) 0%, rgba(20, 184, 166, 0.06) 100%)',
+              boxShadow: theme.cardShadow,
+              border: `1px solid ${theme.borderAccent}`,
+              borderRadius: '1rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <BarChart3 style={{ width: '1.5rem', height: '1.5rem', color: theme.primaryLight }} />
+              <p style={{ color: theme.textMuted, fontSize: '0.95rem', maxWidth: '28rem' }}>
+                Whether you need a trading desk, an ERP rollout, or a greenfield product — we partner with you end to end.
+              </p>
+            </div>
+            <Button
+              onClick={() => scrollTo('contact-section')}
+              style={{
+                background: theme.gradientWarm,
+                color: '#ffffff',
+                border: 'none',
+                fontWeight: 600,
+                padding: '0.65rem 1.25rem',
+              }}
+              className="hover:opacity-90"
+            >
+              Discuss Your Project
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section id="contact-section" style={{ padding: 'clamp(4rem, 8vw, 6rem) 1.5rem' }}>
         <div style={{ maxWidth: '896px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 'clamp(2rem, 5vw, 3rem)' }}>
-            <h2 style={{ fontSize: 'clamp(2rem, 4vw, 3rem)', fontWeight: 'bold', marginBottom: '1rem' }}>
-              Ready to <span style={{ color: neonGreen }}>Get Started?</span>
+            <h2 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 700, marginBottom: '0.75rem' }}>
+              Let&apos;s build something together
             </h2>
-            <p style={{ fontSize: 'clamp(1rem, 2.5vw, 1.125rem)', color: grey, maxWidth: '42rem', margin: '0 auto', padding: '0 1rem' }}>
-              Let's discuss how HedgeOne can transform your trading operations
+            <p style={{ color: theme.textMuted, maxWidth: '32rem', margin: '0 auto', lineHeight: 1.6 }}>
+              Tell us about your product idea, consultancy need, or Algo-trader requirements — we&apos;ll respond promptly.
             </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: 'clamp(1.5rem, 4vw, 2rem)' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              <div style={{ 
-                padding: '1.5rem', 
-                backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-                border: `1px solid ${neonGreen}33`,
-                borderRadius: '0.75rem',
-                backdropFilter: 'blur(4px)'
-              }}>
-              <Mail style={{ width: '2rem', height: '2rem', color: neonGreen, marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>Email Us</h3>
-                <a href="mailto:contact@hedgeone.com" style={{ color: neonGreen, textDecoration: 'none' }} className="hover:underline">
+
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))',
+              gap: '1.5rem',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div
+                style={{
+                  padding: '1.25rem',
+                  background: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '0.75rem',
+                  boxShadow: theme.cardShadow,
+                }}
+              >
+                <Mail style={{ width: '1.75rem', height: '1.75rem', color: theme.primaryLight, marginBottom: '0.75rem' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.35rem' }}>Email</h3>
+                <a href="mailto:contact@hedgeone.co.in" style={{ color: theme.primaryLight, textDecoration: 'none', fontSize: '0.9rem' }} className="hover:underline">
                   contact@hedgeone.co.in
                 </a>
               </div>
-              <div style={{ 
-                padding: '1.5rem', 
-                backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-                border: `1px solid ${neonGreen}33`,
-                borderRadius: '0.75rem',
-                backdropFilter: 'blur(4px)'
-              }}>
-                <MessageCircle style={{ width: '2rem', height: '2rem', color: neonGreen, marginBottom: '1rem' }} />
-                <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ffffff' }}>Get in Touch</h3>
-                <p style={{ color: grey, fontSize: '0.875rem', marginBottom: '1rem' }}>
-                  Reach out via WhatsApp or Telegram for instant support
+
+              <div
+                style={{
+                  padding: '1.25rem',
+                  background: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '0.75rem',
+                  boxShadow: theme.cardShadow,
+                }}
+              >
+                <Phone style={{ width: '1.75rem', height: '1.75rem', color: theme.accentTeal, marginBottom: '0.75rem' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.35rem' }}>Phone</h3>
+                <p style={{ color: theme.textMuted, fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+                  <a href="tel:+16232816140" style={{ color: theme.primaryLight, textDecoration: 'none' }} className="hover:underline">
+                    +1 623 281-6140
+                  </a>
+                  <span style={{ margin: '0 0.35rem' }}>|</span>
+                  <a href="tel:+918447824472" style={{ color: theme.primaryLight, textDecoration: 'none' }} className="hover:underline">
+                    +91 84478 24472
+                  </a>
                 </p>
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <Button
-                    variant="outline"
-                    style={{ 
-                      border: `1px solid ${neonGreen}`, 
-                      color: neonGreen,
-                      backgroundColor: 'transparent'
-                    }}
-                    className="hover:bg-opacity-10"
-                  >
+              </div>
+              <div
+                style={{
+                  padding: '1.25rem',
+                  background: theme.bgCard,
+                  border: `1px solid ${theme.border}`,
+                  borderRadius: '0.75rem',
+                  boxShadow: theme.cardShadow,
+                }}
+              >
+                <MessageCircle style={{ width: '1.75rem', height: '1.75rem', color: theme.accentTeal, marginBottom: '0.75rem' }} />
+                <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '0.35rem' }}>Quick connect</h3>
+                <p style={{ color: theme.textMuted, fontSize: '0.85rem', marginBottom: '0.75rem' }}>
+                  Reach us on WhatsApp or Telegram for faster responses.
+                </p>
+                <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                  <Button variant="outline" style={{ border: `1px solid ${theme.border}`, color: theme.text, background: theme.bgElevated }} className="hover:bg-slate-50">
                     WhatsApp
                   </Button>
-                  <Button
-                    variant="outline"
-                    style={{ 
-                      border: `1px solid ${neonGreen}`, 
-                      color: neonGreen,
-                      backgroundColor: 'transparent'
-                    }}
-                    className="hover:bg-opacity-10"
-                  >
+                  <Button variant="outline" style={{ border: `1px solid ${theme.border}`, color: theme.text, background: theme.bgElevated }} className="hover:bg-slate-50">
                     Telegram
                   </Button>
                 </div>
               </div>
             </div>
-            <div style={{ 
-              padding: '1.5rem', 
-              backgroundColor: 'rgba(0, 0, 0, 0.5)', 
-              border: `1px solid ${neonGreen}33`,
-              borderRadius: '0.75rem',
-              backdropFilter: 'blur(4px)'
-            }}>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '1rem', color: '#ffffff' }}>Send a Message</h3>
-              <form 
-                style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
-                onSubmit={handleSubmit}
-              >
+
+            <div
+              style={{
+                padding: '1.5rem',
+                background: theme.bgCard,
+                border: `1px solid ${theme.border}`,
+                borderRadius: '0.75rem',
+                boxShadow: theme.cardShadow,
+              }}
+            >
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600, marginBottom: '1rem' }}>Send a message</h3>
+              <form style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }} onSubmit={handleSubmit}>
                 <input
                   type="text"
                   placeholder="Name"
@@ -576,16 +698,8 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   disabled={isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.5rem',
-                    color: '#ffffff',
-                    fontSize: '1rem'
-                  }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={inputStyle()}
+                  className="focus:outline-none focus:border-indigo-500/60 disabled:opacity-50"
                 />
                 <input
                   type="email"
@@ -594,64 +708,39 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   disabled={isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.5rem',
-                    color: '#ffffff',
-                    fontSize: '1rem'
-                  }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={inputStyle()}
+                  className="focus:outline-none focus:border-indigo-500/60 disabled:opacity-50"
                 />
                 <input
                   type="tel"
-                  placeholder="Phone Number"
+                  placeholder="Phone (optional)"
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.5rem',
-                    color: '#ffffff',
-                    fontSize: '1rem'
-                  }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={inputStyle()}
+                  className="focus:outline-none focus:border-indigo-500/60 disabled:opacity-50"
                 />
                 <textarea
-                  placeholder="Message"
+                  placeholder="How can we help?"
                   rows={4}
                   required
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   disabled={isSubmitting}
-                  style={{
-                    width: '100%',
-                    padding: '0.75rem 1rem',
-                    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                    border: `1px solid ${neonGreen}33`,
-                    borderRadius: '0.5rem',
-                    color: '#ffffff',
-                    fontSize: '1rem',
-                    resize: 'none',
-                    fontFamily: 'inherit'
-                  }}
-                  className="focus:border-[#00FF5A] focus:outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ ...inputStyle(), resize: 'none', fontFamily: 'inherit' }}
+                  className="focus:outline-none focus:border-indigo-500/60 disabled:opacity-50"
                 />
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  style={{ 
+                  style={{
                     width: '100%',
-                    backgroundColor: neonGreen, 
-                    color: '#000000',
-                    border: 'none'
+                    background: theme.gradient,
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 600,
                   }}
-                  className="hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,255,90,0.5)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="hover:opacity-90 disabled:opacity-50"
                 >
                   {isSubmitting ? 'Sending...' : 'Send Message'}
                   {!isSubmitting && <Send style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />}
@@ -663,78 +752,35 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: '3rem 1.5rem', borderTop: `1px solid ${neonGreen}33` }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto' }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', justifyContent: 'space-between', alignItems: 'center' }}>
+      <footer style={{ padding: '2.5rem 1.5rem', borderTop: `1px solid ${theme.border}`, backgroundColor: theme.bgSubtle }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1.25rem',
+              alignItems: 'center',
+              textAlign: 'center',
+            }}
+          >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-              <img 
-                src={appLogo} 
-                alt="HedgeOne Logo" 
-                style={{ 
-                  height: '2.5rem', 
-                  width: 'auto',
-                  filter: `drop-shadow(0 0 10px ${neonGreen}40)`
-                }}
-              />
-              <span style={{ 
-                fontSize: '1.25rem', 
-                fontWeight: 'bold',
-                background: `linear-gradient(to right, #ffffff, ${neonGreen})`,
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}>
-                HedgeOne
-              </span>
+              <img src={appLogo} alt="HedgeOne Logo" style={{ height: '2.25rem', width: 'auto' }} />
+              <span style={{ fontSize: '1.2rem', fontWeight: 700, color: theme.text }}>HedgeOne</span>
             </div>
-            <div style={{ color: grey, fontSize: '0.875rem', textAlign: 'center' }}>
-              <p>© {new Date().getFullYear()} HedgeOne. All rights reserved.</p>
-              <p style={{ marginTop: '0.25rem' }}>Next-Gen Algorithmic Trading Solutions</p>
-                <p style={{ marginTop: '0.25rem' }}>
-                  Charts powered by{' '}
-                  <a
-                    href="https://www.tradingview.com"
-                    target="_blank"
-                    rel="noreferrer"
-                    style={{ color: '#7dd3fc', textDecoration: 'underline' }}
-                  >
-                    TradingView
-                  </a>
-                </p>
-            </div>
+            <p style={{ color: theme.textMuted, fontSize: '0.875rem', maxWidth: '28rem', lineHeight: 1.6 }}>
+              Hedgeone Consultants LLP — software solutions and consultancy for businesses and individuals.
+            </p>
+            <p style={{ color: theme.textMuted, fontSize: '0.8rem' }}>
+              © {new Date().getFullYear()} Hedgeone Consultants LLP. All rights reserved.
+            </p>
           </div>
         </div>
       </footer>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 1; }
-        }
         @media (max-width: 768px) {
-          /* Mobile-specific styles */
-          .mobile-stack {
-            display: flex;
-            flex-direction: column;
-          }
-          .mobile-half {
-            width: 100%;
-          }
-          /* Make asset grid single column on mobile */
-          .asset-grid {
-            grid-template-columns: 1fr !important;
-            gap: 0.75rem !important;
-          }
-          /* Ensure tables don't overflow on mobile */
-          table {
-            display: block;
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-            width: 100%;
-          }
-          /* Make form inputs more touch-friendly */
           input, textarea {
-            font-size: 16px !important; /* Prevents zoom on iOS */
+            font-size: 16px !important;
           }
         }
       `}</style>

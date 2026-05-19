@@ -3,7 +3,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from './AuthContext';
-import { ArrowRight, LogIn } from 'lucide-react';
+import { ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
+import { marketingTheme as theme, marketingInputStyle } from './marketingTheme';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
@@ -43,231 +44,180 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
     }
   };
 
-  const neonGreen = '#00FF5A';
-  const darkGreen = '#00CC47';
-  const grey = '#A9A9A9';
-  const darkBg = '#0a0a0a';
+  const inputFieldStyle = marketingInputStyle();
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#000000', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      padding: '1rem',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
-      {/* Animated Background */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', zIndex: 0 }}>
-        <div style={{ 
-          position: 'absolute', 
-          inset: 0, 
-          background: `linear-gradient(to bottom right, #000000, ${darkBg}, #000000)`
-        }} />
-        {/* Particle Network */}
-        <div style={{ position: 'absolute', inset: 0, opacity: 0.2 }}>
-          {[...Array(30)].map((_, i) => (
-            <div
-              key={i}
-              style={{
-                position: 'absolute',
-                width: '3px',
-                height: '3px',
-                backgroundColor: neonGreen,
-                borderRadius: '50%',
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                animation: `pulse ${2 + Math.random() * 2}s ease-in-out infinite`,
-                animationDelay: `${Math.random() * 2}s`,
-              }}
-            />
-          ))}
-        </div>
-        {/* Gradient Orbs */}
-        <div style={{
-          position: 'absolute',
-          width: '500px',
-          height: '500px',
-          background: `radial-gradient(circle, ${neonGreen}15, transparent 70%)`,
-          top: '-250px',
-          right: '-250px',
-          borderRadius: '50%',
-          filter: 'blur(60px)'
-        }} />
-        <div style={{
-          position: 'absolute',
-          width: '400px',
-          height: '400px',
-          background: `radial-gradient(circle, ${neonGreen}10, transparent 70%)`,
-          bottom: '-200px',
-          left: '-200px',
-          borderRadius: '50%',
-          filter: 'blur(60px)'
-        }} />
+    <div
+      style={{
+        minHeight: '100vh',
+        backgroundColor: theme.bg,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '1rem',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Background */}
+      <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            background: `radial-gradient(ellipse 70% 50% at 50% -10%, rgba(99, 102, 241, 0.1), transparent),
+              radial-gradient(ellipse 50% 40% at 100% 80%, rgba(245, 158, 11, 0.08), transparent),
+              radial-gradient(ellipse 40% 30% at 0% 60%, rgba(20, 184, 166, 0.06), transparent)`,
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            backgroundImage: `linear-gradient(${theme.border} 1px, transparent 1px),
+              linear-gradient(90deg, ${theme.border} 1px, transparent 1px)`,
+            backgroundSize: '64px 64px',
+            opacity: 0.55,
+          }}
+        />
       </div>
 
-      <div style={{ 
-        width: '100%', 
-        maxWidth: '28rem', 
-        position: 'relative', 
-        zIndex: 10 
-      }}>
-        {/* Logo/Branding */}
-        <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem' }}>
-            <img 
-              src={appLogo} 
-              alt="HedgeOne Logo" 
+      <div style={{ width: '100%', maxWidth: '28rem', position: 'relative', zIndex: 10 }}>
+        {onBackToMarketing && (
+          <button
+            type="button"
+            onClick={onBackToMarketing}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              marginBottom: '1.25rem',
+              color: theme.textMuted,
+              fontSize: '0.875rem',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              padding: 0,
+            }}
+            className="hover:text-indigo-600 transition-colors"
+          >
+            <ArrowLeft style={{ width: '1rem', height: '1rem' }} />
+            Back to website
+          </button>
+        )}
+
+        {/* Branding */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <img
+              src={appLogo}
+              alt="HedgeOne Logo"
               onClick={onBackToMarketing}
-              style={{ 
-                height: '4rem', 
+              style={{
+                height: '3.5rem',
                 width: 'auto',
                 cursor: onBackToMarketing ? 'pointer' : 'default',
-                transition: 'transform 0.3s ease, filter 0.3s ease',
-                filter: `drop-shadow(0 0 20px ${neonGreen}40)`
               }}
-              className={onBackToMarketing ? "hover:scale-110 hover:drop-shadow-[0_0_30px_rgba(0,255,90,0.6)]" : ""}
+              className={onBackToMarketing ? 'hover:scale-105 transition-transform' : ''}
             />
           </div>
-          <h1 style={{ 
-            fontSize: '1.875rem', 
-            fontWeight: 'bold',
-            marginBottom: '0.5rem',
-            background: `linear-gradient(to right, #ffffff, ${neonGreen})`,
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            backgroundClip: 'text'
-          }}>
+          <h1
+            style={{
+              fontSize: '1.75rem',
+              fontWeight: 700,
+              marginBottom: '0.35rem',
+              color: theme.text,
+            }}
+          >
             HedgeOne
           </h1>
-          <p style={{ color: grey, fontSize: '1rem' }}>
-            Welcome back to your trading dashboard
+          <p style={{ color: theme.textMuted, fontSize: '0.95rem' }}>
+            Sign in to the Algo-trader console
           </p>
         </div>
 
-        {/* Auth Card */}
-        <div style={{
-          padding: '2rem',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          border: `1px solid ${neonGreen}33`,
-          borderRadius: '1rem',
-          backdropFilter: 'blur(12px)',
-          boxShadow: `0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px ${neonGreen}20`
-        }}>
-          {/* Header */}
+        {/* Auth card */}
+        <div
+          style={{
+            padding: '1.75rem',
+            backgroundColor: theme.bgCard,
+            border: `1px solid ${theme.border}`,
+            borderRadius: '1rem',
+            boxShadow: theme.cardShadow,
+          }}
+        >
           <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
-              gap: '0.5rem',
-              padding: '0.5rem 1rem',
-              backgroundColor: `${neonGreen}15`,
-              borderRadius: '0.5rem',
-              marginBottom: '1rem'
-            }}>
-              <LogIn style={{ width: '1.25rem', height: '1.25rem', color: neonGreen }} />
-              <h2 style={{ 
-                fontSize: '1.5rem', 
-                fontWeight: 'bold', 
-                color: '#ffffff',
-                margin: 0
-              }}>
-                Welcome Back
-              </h2>
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.4rem 0.9rem',
+                backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                border: `1px solid ${theme.borderAccent}`,
+                borderRadius: '999px',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <LogIn style={{ width: '1rem', height: '1rem', color: theme.primaryLight }} />
+              <span style={{ fontSize: '0.875rem', fontWeight: 600, color: theme.primary }}>Welcome back</span>
             </div>
-            <p style={{ 
-              color: grey, 
-              fontSize: '0.875rem',
-              margin: 0
-            }}>
-              Sign in to access your algorithmic trading strategies
+            <p style={{ color: theme.textMuted, fontSize: '0.875rem', margin: 0, lineHeight: 1.5 }}>
+              Access your algorithmic trading strategies and live execution dashboard
             </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Label 
-                htmlFor="email" 
-                style={{ 
-                  color: '#ffffff', 
-                  fontSize: '0.875rem', 
-                  fontWeight: '500' 
-                }}
-              >
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <Label htmlFor="email" style={{ color: theme.text, fontSize: '0.875rem', fontWeight: 500 }}>
                 Email
               </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  border: `1px solid ${neonGreen}33`,
-                  borderRadius: '0.5rem',
-                  padding: '0.75rem 1rem',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  transition: 'all 0.3s ease'
-                }}
-                className="focus:border-[#00FF5A] focus:outline-none focus:ring-2 focus:ring-[#00FF5A] focus:ring-opacity-20"
-                />
-              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={inputFieldStyle}
+                className="focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/15"
+              />
+            </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <Label 
-                htmlFor="password" 
-                style={{ 
-                  color: '#ffffff', 
-                  fontSize: '0.875rem', 
-                  fontWeight: '500' 
-                }}
-              >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <Label htmlFor="password" style={{ color: theme.text, fontSize: '0.875rem', fontWeight: 500 }}>
                 Password
               </Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                style={{
-                  backgroundColor: 'rgba(0, 0, 0, 0.5)',
-                  border: `1px solid ${neonGreen}33`,
-                  borderRadius: '0.5rem',
-                  padding: '0.75rem 1rem',
-                  color: '#ffffff',
-                  fontSize: '1rem',
-                  transition: 'all 0.3s ease'
-                }}
-                className="focus:border-[#00FF5A] focus:outline-none focus:ring-2 focus:ring-[#00FF5A] focus:ring-opacity-20"
-                />
-              </div>
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                style={inputFieldStyle}
+                className="focus:border-indigo-500/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/15"
+              />
+            </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
-              style={{ 
+              style={{
                 width: '100%',
-                backgroundColor: neonGreen,
-                color: '#000000',
+                background: theme.gradient,
+                color: '#ffffff',
                 border: 'none',
-                padding: '0.875rem 1.5rem',
+                padding: '0.8rem 1.5rem',
                 fontSize: '1rem',
-                fontWeight: '600',
+                fontWeight: 600,
                 borderRadius: '0.5rem',
-                marginTop: '0.5rem',
-                transition: 'all 0.3s ease',
+                marginTop: '0.25rem',
                 cursor: isLoading ? 'not-allowed' : 'pointer',
-                opacity: isLoading ? 0.7 : 1
+                opacity: isLoading ? 0.7 : 1,
               }}
-              className="hover:opacity-90 hover:shadow-[0_0_20px_rgba(0,255,90,0.5)]"
+              className="hover:opacity-90 transition-all"
             >
               {isLoading ? (
                 'Please wait...'
@@ -277,93 +227,83 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
                   <ArrowRight style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
                 </>
               )}
-              </Button>
-            </form>
-
-            {/* Divider */}
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              margin: '1.5rem 0',
-              gap: '1rem'
-            }}>
-              <div style={{ 
-                flex: 1, 
-                height: '1px', 
-                background: `linear-gradient(to right, transparent, ${neonGreen}33, transparent)` 
-              }} />
-              <span style={{ color: grey, fontSize: '0.875rem' }}>OR</span>
-              <div style={{ 
-                flex: 1, 
-                height: '1px', 
-                background: `linear-gradient(to right, transparent, ${neonGreen}33, transparent)` 
-              }} />
-            </div>
-
-            {/* Google Sign In Button */}
-            <Button 
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={isGoogleLoading || isLoading}
-              style={{ 
-                width: '100%',
-                backgroundColor: '#ffffff',
-                color: '#000000',
-                border: `1px solid ${neonGreen}33`,
-                padding: '0.875rem 1.5rem',
-                fontSize: '1rem',
-                fontWeight: '600',
-                borderRadius: '0.5rem',
-                transition: 'all 0.3s ease',
-                cursor: (isGoogleLoading || isLoading) ? 'not-allowed' : 'pointer',
-                opacity: (isGoogleLoading || isLoading) ? 0.7 : 1,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.75rem'
-              }}
-              className="hover:opacity-90 hover:shadow-[0_0_20px_rgba(255,255,255,0.3)]"
-            >
-              {isGoogleLoading ? (
-                'Connecting...'
-              ) : (
-                <>
-                  <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
-                    <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.163-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.037-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
-                    <path fill="#FBBC05" d="M3.963 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.348 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.006-2.332z"/>
-                    <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.963 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
-                  </svg>
-                  Continue with Google
-                </>
-              )}
             </Button>
+          </form>
+
+          <div style={{ display: 'flex', alignItems: 'center', margin: '1.25rem 0', gap: '1rem' }}>
+            <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+            <span style={{ color: theme.textMuted, fontSize: '0.8rem' }}>OR</span>
+            <div style={{ flex: 1, height: '1px', backgroundColor: theme.border }} />
+          </div>
+
+          <Button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isGoogleLoading || isLoading}
+            variant="outline"
+            style={{
+              width: '100%',
+              backgroundColor: theme.bgElevated,
+              color: theme.text,
+              border: `1px solid ${theme.border}`,
+              padding: '0.8rem 1.5rem',
+              fontSize: '1rem',
+              fontWeight: 600,
+              borderRadius: '0.5rem',
+              cursor: isGoogleLoading || isLoading ? 'not-allowed' : 'pointer',
+              opacity: isGoogleLoading || isLoading ? 0.7 : 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.75rem',
+            }}
+            className="hover:bg-slate-50 transition-all"
+          >
+            {isGoogleLoading ? (
+              'Connecting...'
+            ) : (
+              <>
+                <svg width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                  <path
+                    fill="#4285F4"
+                    d="M17.64 9.2c0-.637-.057-1.251-.163-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.037-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M3.963 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.348 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.006-2.332z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.963 7.293C4.672 5.163 6.656 3.58 9 3.58z"
+                  />
+                </svg>
+                Continue with Google
+              </>
+            )}
+          </Button>
         </div>
 
-        {/* Footer Note */}
-        <div style={{ 
-          textAlign: 'center', 
-          marginTop: '1.5rem',
-          color: grey,
-          fontSize: '0.75rem'
-        }}>
-          <p>Secure authentication powered by HedgeOne</p>
-        </div>
+        <p style={{ textAlign: 'center', marginTop: '1.25rem', color: theme.textMuted, fontSize: '0.75rem' }}>
+          Secure authentication powered by HedgeOne
+        </p>
       </div>
 
       <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.2; }
-          50% { opacity: 0.8; }
-        }
         input::placeholder {
-          color: ${grey}80;
+          color: ${theme.textMuted};
+          opacity: 0.7;
         }
-        input:focus {
-          border-color: ${neonGreen} !important;
-          box-shadow: 0 0 0 2px ${neonGreen}33 !important;
+        @media (max-width: 768px) {
+          input {
+            font-size: 16px !important;
+          }
         }
       `}</style>
     </div>
   );
 }
+
