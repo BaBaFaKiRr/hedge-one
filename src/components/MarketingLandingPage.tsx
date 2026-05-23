@@ -129,7 +129,8 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       icon: Building2,
       accent: theme.secondary,
       features: ['ERP workflows', 'Inventory management', 'CRM & customer pipeline', 'AI-assisted insights'],
-      showConsoleLogin: false,
+      loginUrl: 'https://lejer.hedgeone.co.in',
+      loginLabel: 'Log in to LEJER',
     },
   ];
 
@@ -464,6 +465,25 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                       </a>
                     </p>
                   </>
+                ) : product.loginUrl ? (
+                  <Button
+                    onClick={() => {
+                      window.location.href = product.loginUrl!;
+                    }}
+                    style={{
+                      width: '100%',
+                      background: theme.gradient,
+                      color: '#fff',
+                      border: 'none',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '0.5rem',
+                      fontWeight: 600,
+                    }}
+                    className="hover:opacity-90 transition-all"
+                  >
+                    <LogIn style={{ marginRight: '0.5rem', width: '1rem', height: '1rem' }} />
+                    {product.loginLabel ?? 'Log in'}
+                  </Button>
                 ) : (
                   <Button
                     onClick={() => scrollTo('contact-section')}
