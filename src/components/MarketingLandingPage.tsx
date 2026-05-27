@@ -7,15 +7,12 @@ import {
   Mail,
   Phone,
   Send,
-  LineChart,
-  Building2,
   Globe,
   Smartphone,
   Cloud,
   Code2,
   Sparkles,
   Users,
-  LogIn,
   Package,
   BarChart3,
   HeadphonesIcon,
@@ -26,12 +23,13 @@ import { toast } from 'sonner';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 import { marketingTheme as theme, marketingInputStyle as inputStyle } from './marketingTheme';
+import { marketingProducts, type ProductId } from './marketingProducts';
 
 interface MarketingLandingPageProps {
-  onGetStarted: () => void;
+  onNavigateToProduct: (productId: ProductId) => void;
 }
 
-export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps) {
+export function MarketingLandingPage({ onNavigateToProduct }: MarketingLandingPageProps) {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -107,32 +105,6 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
       setIsSubmitting(false);
     }
   };
-
-  const products = [
-    {
-      id: 'algo-trader',
-      name: 'HedgeOne Algo-trader',
-      tagline: 'Algorithmic trading, curated and hosted',
-      description:
-        'A market securities trading algorithm curating and hosting service. Deploy strategies, connect brokers, and monitor execution from a unified console.',
-      icon: LineChart,
-      accent: theme.primary,
-      features: ['Strategy curation & hosting', 'Broker integrations', 'Live execution monitoring', 'Risk-aware deployment'],
-      showConsoleLogin: true,
-    },
-    {
-      id: 'lejer',
-      name: 'LEJER Business Manager',
-      tagline: 'AI-powered operations for modern teams',
-      description:
-        'An AI-based business management platform combining ERP, inventory management, and CRM in one cohesive workspace.',
-      icon: Building2,
-      accent: theme.secondary,
-      features: ['ERP workflows', 'Inventory management', 'CRM & customer pipeline', 'AI-assisted insights'],
-      loginUrl: 'https://lejer.hedgeone.co.in',
-      loginLabel: 'Log in to LEJER',
-    },
-  ];
 
   const services = [
     {
@@ -388,9 +360,18 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
               gap: '1.5rem',
             }}
           >
-            {products.map((product) => (
+            {marketingProducts.map((product) => (
               <div
                 key={product.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => onNavigateToProduct(product.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onNavigateToProduct(product.id);
+                  }
+                }}
                 style={{
                   padding: '1.75rem',
                   background: theme.bgCard,
@@ -399,6 +380,8 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                   boxShadow: theme.cardShadow,
                   display: 'flex',
                   flexDirection: 'column',
+                  cursor: 'pointer',
+                  textAlign: 'left',
                 }}
                 className="hover:border-indigo-400/50 hover:shadow-md transition-all"
               >
@@ -407,14 +390,20 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                     width: '3rem',
                     height: '3rem',
                     borderRadius: '0.75rem',
-                    background: `${product.accent}22`,
+                    background: theme.bgElevated,
+                    border: `1px solid ${theme.border}`,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     marginBottom: '1.25rem',
+                    padding: '0.35rem',
                   }}
                 >
-                  <product.icon style={{ width: '1.5rem', height: '1.5rem', color: product.accent }} />
+                  <img
+                    src={product.logo}
+                    alt={product.logoAlt}
+                    style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                  />
                 </div>
 
                 <h3 style={{ fontSize: '1.35rem', fontWeight: 700, marginBottom: '0.35rem' }}>{product.name}</h3>
@@ -426,7 +415,7 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                 </p>
 
                 <div style={{ display: 'grid', gap: '0.45rem', marginBottom: '1.5rem' }}>
-                  {product.features.map((feature) => (
+                  {product.features.slice(0, 4).map((feature) => (
                     <div key={feature} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: theme.textMuted }}>
                       <CheckCircle2 style={{ width: '0.9rem', height: '0.9rem', color: product.accent, flexShrink: 0 }} />
                       {feature}
@@ -434,74 +423,27 @@ export function MarketingLandingPage({ onGetStarted }: MarketingLandingPageProps
                   ))}
                 </div>
 
-                {product.showConsoleLogin ? (
-                  <>
-                    <Button
-                      onClick={onGetStarted}
-                      style={{
-                        width: '100%',
-                        background: theme.gradient,
-                        color: '#fff',
-                        border: 'none',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '0.5rem',
-                        fontWeight: 600,
-                      }}
-                      className="hover:opacity-90 transition-all"
-                    >
-                      <LogIn style={{ marginRight: '0.5rem', width: '1rem', height: '1rem' }} />
-                      Log in to Console
-                    </Button>
-                    <p style={{ marginTop: '0.75rem', fontSize: '0.75rem', color: theme.textMuted, textAlign: 'center' }}>
-                      Charts Powered by{' '}
-                      <a
-                        href="https://www.tradingview.com"
-                        target="_blank"
-                        rel="noreferrer"
-                        style={{ color: theme.primaryLight, textDecoration: 'none' }}
-                        className="hover:underline"
-                      >
-                        TradingView
-                      </a>
-                    </p>
-                  </>
-                ) : product.loginUrl ? (
-                  <Button
-                    onClick={() => {
-                      window.location.href = product.loginUrl!;
-                    }}
-                    style={{
-                      width: '100%',
-                      background: theme.gradient,
-                      color: '#fff',
-                      border: 'none',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '0.5rem',
-                      fontWeight: 600,
-                    }}
-                    className="hover:opacity-90 transition-all"
-                  >
-                    <LogIn style={{ marginRight: '0.5rem', width: '1rem', height: '1rem' }} />
-                    {product.loginLabel ?? 'Log in'}
-                  </Button>
-                ) : (
-                  <Button
-                    onClick={() => scrollTo('contact-section')}
-                    variant="outline"
-                    style={{
-                      width: '100%',
-                      border: `1px solid ${theme.secondary}55`,
-                      color: theme.secondaryMuted,
-                      background: 'rgba(245, 158, 11, 0.1)',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '0.5rem',
-                    }}
-                    className="hover:bg-amber-500/10 transition-all"
-                  >
-                    Request a Demo
-                    <ArrowRight style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
-                  </Button>
-                )}
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigateToProduct(product.id);
+                  }}
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    color: product.accent,
+                    border: 'none',
+                    padding: '0.5rem 0',
+                    fontWeight: 600,
+                    boxShadow: 'none',
+                  }}
+                  className="hover:opacity-80 transition-opacity"
+                >
+                  Know more
+                  <ArrowRight style={{ marginLeft: '0.5rem', width: '1rem', height: '1rem' }} />
+                </Button>
               </div>
             ))}
           </div>
