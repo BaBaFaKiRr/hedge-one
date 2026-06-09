@@ -1,9 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { AuthProvider, useAuth } from './components/AuthContext';
-import { MarketingLandingPage } from './components/MarketingLandingPage';
-import { ProductDetailPage } from './components/ProductDetailPage';
 import { LandingPage } from './components/LandingPage';
-import type { ProductId } from './components/marketingProducts';
 import { DashboardLayout } from './components/DashboardLayout';
 import { HomePage } from './components/HomePage';
 import { MyKeysPage } from './components/MyKeysPage';
@@ -27,40 +24,11 @@ type PageType =
   | 'strategy-detail'
   | 'trade-detail';
 
-type MarketingPath = '/' | '/algo-trader' | '/lejer' | '/login';
-
-function normalizeMarketingPath(pathname: string): MarketingPath {
-  if (pathname === '/algo-trader' || pathname === '/lejer' || pathname === '/login') {
-    return pathname;
-  }
-  return '/';
-}
-
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [currentPage, setCurrentPage] = useState<PageType>('home');
   const [selectedStrategyId, setSelectedStrategyId] = useState<string | null>(null);
   const [selectedTradeId, setSelectedTradeId] = useState<number | null>(null);
-  const [loginReturnView, setLoginReturnView] = useState<'/' | '/algo-trader' | '/lejer'>('/');
-  const [marketingPath, setMarketingPath] = useState<MarketingPath>(normalizeMarketingPath(window.location.pathname || '/'));
-
-  useEffect(() => {
-    const onPopState = () => {
-      setMarketingPath(normalizeMarketingPath(window.location.pathname || '/'));
-      window.scrollTo({ top: 0, behavior: 'auto' });
-    };
-
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  const navigateMarketing = (path: MarketingPath) => {
-    if (window.location.pathname !== path) {
-      window.history.pushState({}, '', path);
-    }
-    setMarketingPath(path);
-    window.scrollTo({ top: 0, behavior: 'auto' });
-  };
 
   if (isLoading) {
     return (
@@ -71,37 +39,7 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    if (marketingPath === '/login') {
-      return (
-        <LandingPage
-          onBackToMarketing={() => {
-            navigateMarketing(loginReturnView);
-          }}
-        />
-      );
-    }
-
-    if (marketingPath === '/algo-trader' || marketingPath === '/lejer') {
-      const productId: ProductId = marketingPath === '/algo-trader' ? 'algo-trader' : 'lejer';
-      return (
-        <ProductDetailPage
-          productId={productId}
-          onBack={() => navigateMarketing('/')}
-          onLogin={() => {
-            setLoginReturnView(marketingPath);
-            navigateMarketing('/login');
-          }}
-        />
-      );
-    }
-
-    return (
-      <MarketingLandingPage
-        onNavigateToProduct={(productId) => {
-          navigateMarketing(productId === 'algo-trader' ? '/algo-trader' : '/lejer');
-        }}
-      />
-    );
+    return <LandingPage />;
   }
 
   const handleNavigateToStrategyDetail = (strategyId: string) => {

@@ -3,16 +3,12 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { useAuth } from './AuthContext';
-import { ArrowRight, LogIn, ArrowLeft } from 'lucide-react';
+import { ArrowRight, LogIn } from 'lucide-react';
 import { marketingTheme as theme, marketingInputStyle } from './marketingTheme';
 // @ts-ignore - Vite handles image imports
 import appLogo from './app_logo.png';
 
-interface LandingPageProps {
-  onBackToMarketing?: () => void;
-}
-
-export function LandingPage({ onBackToMarketing }: LandingPageProps) {
+export function LandingPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -83,43 +79,16 @@ export function LandingPage({ onBackToMarketing }: LandingPageProps) {
       </div>
 
       <div style={{ width: '100%', maxWidth: '28rem', position: 'relative', zIndex: 10 }}>
-        {onBackToMarketing && (
-          <button
-            type="button"
-            onClick={onBackToMarketing}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              marginBottom: '1.25rem',
-              color: theme.textMuted,
-              fontSize: '0.875rem',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              padding: 0,
-            }}
-            className="hover:text-indigo-600 transition-colors"
-          >
-            <ArrowLeft style={{ width: '1rem', height: '1rem' }} />
-            Back to website
-          </button>
-        )}
-
         {/* Branding */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
             <img
               src={appLogo}
               alt="HedgeOne Logo"
-              onClick={onBackToMarketing}
               style={{
                 height: '3.5rem',
                 width: 'auto',
-                cursor: onBackToMarketing ? 'pointer' : 'default',
               }}
-              className={onBackToMarketing ? 'hover:scale-105 transition-transform' : ''}
             />
           </div>
           <h1
